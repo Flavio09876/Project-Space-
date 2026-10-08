@@ -2066,16 +2066,13 @@ def chat():
 
             other.id AS other_id,
 
-            other.name AS other_name,
+            other.name AS name,
 
-            other.username
-                AS other_username,
+            other.username AS username,
 
-            other.profile_photo
-                AS other_photo,
+            other.profile_photo AS profile_photo,
 
-            other.verified
-                AS other_verified,
+            other.verified AS verified,
 
             (
                 SELECT m.content
@@ -2227,9 +2224,10 @@ def conversation(username):
 
     return render_template(
         "conversation.html",
-        target=target,
+        other_user=target,
+        conversation={"id": conversation_id},
         messages=messages,
-        conversation_id=conversation_id,
+        current_user=user,
     )
 
 
