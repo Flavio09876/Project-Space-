@@ -38,7 +38,7 @@
                     <img
                         id="avatar-preview"
                         class="profile-avatar"
-                        src="{{ url_for('avatar_file', filename=current_user.profile_photo) }}"
+                        src="{{ current_user.profile_photo if current_user.profile_photo and current_user.profile_photo.startswith('http') else url_for('avatar_file', filename=current_user.profile_photo) }}"
                         alt=""
                     >
 
@@ -200,7 +200,7 @@
                  id="header-preview"
                  style="
                  {% if current_user.profile_header_type == 'image' and current_user.profile_header_value %}
-                     background-image:url('{{ url_for('header_file', filename=current_user.profile_header_value) }}');
+                     background-image:url('{{ current_user.profile_header_value if current_user.profile_header_value and current_user.profile_header_value.startswith('http') else url_for('header_file', filename=current_user.profile_header_value) }}');
                  {% elif current_user.profile_header_value %}
                      background:{{ current_user.profile_header_value }};
                  {% endif %}

@@ -31,7 +31,7 @@
 
                     <img
                         class="avatar avatar-medium"
-                        src="{{ url_for('avatar_file', filename=conversation.profile_photo) }}"
+                        src="{{ conversation.profile_photo if conversation.profile_photo and conversation.profile_photo.startswith('http') else url_for('avatar_file', filename=conversation.profile_photo) }}"
                         alt=""
                     >
 

@@ -28,7 +28,7 @@
 
                 <img
                     class="avatar avatar-medium"
-                    src="{{ url_for('avatar_file', filename=current_user.profile_photo) }}"
+                    src="{{ current_user.profile_photo if current_user.profile_photo and current_user.profile_photo.startswith('http') else url_for('avatar_file', filename=current_user.profile_photo) }}"
                     alt=""
                 >
 

@@ -15,7 +15,7 @@
             has-cover-image
         {% endif %}"
         {% if profile.profile_header_type == 'image' and profile.profile_header_value %}
-        style="background-image:url('{{ url_for('header_file', filename=profile.profile_header_value) }}');"
+        style="background-image:url('{{ profile.profile_header_value if profile.profile_header_value and profile.profile_header_value.startswith('http') else url_for('header_file', filename=profile.profile_header_value) }}');"
         {% elif profile.profile_header_value %}
         style="background:{{ profile.profile_header_value }};"
         {% endif %}
@@ -35,7 +35,7 @@
                 {% if profile.profile_photo %}
 
                     <img
-                        src="{{ url_for('avatar_file', filename=profile.profile_photo) }}"
+                        src="{{ profile.profile_photo if profile.profile_photo and profile.profile_photo.startswith('http') else url_for('avatar_file', filename=profile.profile_photo) }}"
                         class="z-profile-avatar"
                         alt="Foto de {{ profile.name }}"
                     >
@@ -237,7 +237,7 @@
                             {% if profile.profile_photo %}
 
                                 <img
-                                    src="{{ url_for('avatar_file', filename=profile.profile_photo) }}"
+                                    src="{{ profile.profile_photo if profile.profile_photo and profile.profile_photo.startswith('http') else url_for('avatar_file', filename=profile.profile_photo) }}"
                                     class="z-post-avatar"
                                     alt=""
                                 >
@@ -297,7 +297,7 @@
                     <div class="z-post-media">
 
                         <img
-                            src="{{ url_for('post_file', filename=post.image) }}"
+                            src="{{ post.image if post.image and post.image.startswith('http') else url_for('post_file', filename=post.image) }}"
                             alt=""
                         >
 

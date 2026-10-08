@@ -41,7 +41,7 @@
 
                         <img
                             class="avatar avatar-xlarge"
-                            src="{{ url_for('avatar_file', filename=user.profile_photo) }}"
+                            src="{{ user.profile_photo if user.profile_photo and user.profile_photo.startswith('http') else url_for('avatar_file', filename=user.profile_photo) }}"
                             alt=""
                         >
 

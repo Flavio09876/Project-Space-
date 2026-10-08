@@ -29,7 +29,7 @@
                 {% if current_user.profile_photo %}
                     <img
                         class="avatar avatar-medium"
-                        src="{{ url_for('avatar_file', filename=current_user.profile_photo) }}"
+                        src="{{ current_user.profile_photo if current_user.profile_photo and current_user.profile_photo.startswith('http') else url_for('avatar_file', filename=current_user.profile_photo) }}"
                         alt=""
                     >
                 {% else %}
@@ -65,7 +65,7 @@
 
                                 <img
                                     class="avatar avatar-small"
-                                    src="{{ url_for('avatar_file', filename=post.profile_photo) }}"
+                                    src="{{ post.profile_photo if post.profile_photo and post.profile_photo.startswith('http') else url_for('avatar_file', filename=post.profile_photo) }}"
                                     alt=""
                                 >
 
@@ -113,7 +113,7 @@
 
                             <img
                                 class="post-image"
-                                src="{{ url_for('post_file', filename=post.image) }}"
+                                src="{{ post.image if post.image and post.image.startswith('http') else url_for('post_file', filename=post.image) }}"
                                 alt="Imagem da publicação"
                             >
 
@@ -200,7 +200,7 @@
 
                     <img
                         class="avatar avatar-large"
-                        src="{{ url_for('avatar_file', filename=current_user.profile_photo) }}"
+                        src="{{ current_user.profile_photo if current_user.profile_photo and current_user.profile_photo.startswith('http') else url_for('avatar_file', filename=current_user.profile_photo) }}"
                         alt=""
                     >
 

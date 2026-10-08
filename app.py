@@ -23,6 +23,8 @@ import psycopg
 from psycopg.rows import dict_row
 import secrets
 import uuid
+import cloudinary
+import cloudinary.uploader
 
 
 # ============================================================
@@ -49,8 +51,13 @@ for directory in (
 
 app = Flask(__name__)
 
-app.config["SECRET_KEY"] = (
+app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY") or (
     "project-z-local-" + secrets.token_hex(16)
+)
+
+cloudinary.config(
+    cloudinary_url=os.environ.get("CLOUDINARY_URL"),
+    secure=True,
 )
 
 app.config["MAX_CONTENT_LENGTH"] = 15 * 1024 * 1024
@@ -452,32 +459,36 @@ def save_upload(file, directory):
     if not file or not file.filename:
         return None
 
-    if not valid_image(
-        file.filename
-    ):
+    if not valid_image(file.filename):
         return None
 
     extension = (
         Path(
-            secure_filename(
-                file.filename
-            )
+            secure_filename(file.filename)
         )
         .suffix
         .lower()
     )
 
-    filename = (
-        uuid.uuid4().hex
-        + extension
+    public_id = uuid.uuid4().hex
+
+    if directory == AVATAR_DIR:
+        folder = "project-z/avatars"
+    elif directory == HEADER_DIR:
+        folder = "project-z/headers"
+    elif directory == POST_DIR:
+        folder = "project-z/posts"
+    else:
+        folder = "project-z/misc"
+
+    result = cloudinary.uploader.upload(
+        file,
+        folder=folder,
+        public_id=public_id,
+        resource_type="image",
     )
 
-    file.save(
-        directory / filename
-    )
-
-    return filename
-
+    return result["secure_url"]
 
 def create_notification(
     user_id,
@@ -2518,43 +2529,36 @@ def toggle_community(
 # UPLOADS
 # ============================================================
 
-@app.route(
-    "/uploads/avatars/<filename>"
-)
+@app.route("/uploads/avatars/<path:filename>")
 def avatar_file(filename):
+
+    if filename.startswith(("http://", "https://")):
+        return redirect(filename)
 
     return send_from_directory(
         AVATAR_DIR,
         filename,
     )
-
-
-@app.route(
-    "/uploads/headers/<filename>"
-)
+@app.route("/uploads/headers/<path:filename>")
 def header_file(filename):
+
+    if filename.startswith(("http://", "https://")):
+        return redirect(filename)
 
     return send_from_directory(
         HEADER_DIR,
         filename,
     )
-
-
-@app.route(
-    "/uploads/posts/<filename>"
-)
+@app.route("/uploads/posts/<path:filename>")
 def post_file(filename):
+
+    if filename.startswith(("http://", "https://")):
+        return redirect(filename)
 
     return send_from_directory(
         POST_DIR,
         filename,
     )
-
-
-# ============================================================
-# API STATUS
-# ============================================================
-
 @app.get("/api/status")
 def api_status():
 
@@ -2564,7 +2568,7 @@ def api_status():
             "status": "online",
             "version": "1.0.0",
 
-            "database": "sqlite",
+            "database": "postgresql",
 
             "features": [
                 "accounts",
