@@ -156,10 +156,17 @@ async function sendMessage(event) {
     const content = input.value.trim();
 
     if (!content) {
+        showChatNotice("Digite uma mensagem antes de enviar.");
+        input.focus();
         return;
     }
 
     const conversationId = list.dataset.conversationId;
+    const button = document.querySelector(".send-message-button");
+
+    clearChatNotice();
+
+    if (button) button.disabled = true;
 
     try {
 
@@ -179,24 +186,49 @@ async function sendMessage(event) {
         const data = await response.json();
 
         if (!response.ok) {
-            alert(data.error || "Não foi possível enviar a mensagem.");
+            showChatNotice(data.error || "Não foi possível enviar a mensagem.");
+            return;
+        }
+
+        if (!data.message || typeof data.message.content !== "string") {
+            showChatNotice("O servidor respondeu, mas não retornou a mensagem corretamente.");
             return;
         }
 
         input.value = "";
-
         addMessageToChat(data.message);
-
         list.scrollTop = list.scrollHeight;
 
     } catch (error) {
-
         console.error(error);
-
-        alert("Erro de conexão.");
-
+        showChatNotice("Falha de conexão. Verifique a internet e tente novamente.");
+    } finally {
+        if (button) button.disabled = false;
     }
 
+}
+
+
+function showChatNotice(message) {
+    let notice = document.getElementById("chat-notice");
+    const form = document.getElementById("message-form");
+
+    if (!notice && form) {
+        notice = document.createElement("div");
+        notice.id = "chat-notice";
+        notice.setAttribute("role", "status");
+        notice.style.cssText =
+            "color:#ff8b8b;font-size:14px;padding:8px 4px;";
+        form.insertAdjacentElement("beforebegin", notice);
+    }
+
+    if (notice) notice.textContent = message;
+}
+
+
+function clearChatNotice() {
+    const notice = document.getElementById("chat-notice");
+    if (notice) notice.textContent = "";
 }
 
 

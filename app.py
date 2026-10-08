@@ -2274,11 +2274,20 @@ def send_message(
         ), 403
 
 
-    content = (
-        request.form
-        .get("content", "")
-        .strip()
+    payload = request.get_json(silent=True)
+
+    if not isinstance(payload, dict):
+        payload = {}
+
+    content = payload.get(
+        "content",
+        request.form.get("content", ""),
     )
+
+    if not isinstance(content, str):
+        content = ""
+
+    content = content.strip()
 
 
     if not content:
@@ -2352,13 +2361,28 @@ def send_message(
         )
 
 
-    return jsonify(
-        {
-            "ok": True,
-            "message_id": message_id,
-            "content": content,
-        }
+    message = query_one(
+        """
+        SELECT id, sender_id, content, created_at
+        FROM messages
+        WHERE id = %s
+        """,
+        (message_id,),
     )
+
+    if not message:
+        return jsonify({
+            "ok": False,
+            "error": "A mensagem foi salva, mas não foi possível carregá-la.",
+        }), 500
+
+    message = dict(message)
+    message["created_at"] = str(message["created_at"])
+
+    return jsonify({
+        "ok": True,
+        "message": message,
+    })
 
 
 # ============================================================
