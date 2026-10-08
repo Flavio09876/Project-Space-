@@ -18,9 +18,7 @@ from werkzeug.utils import secure_filename
 
 from pathlib import Path
 from functools import wraps
-import os
-import psycopg
-from psycopg.rows import dict_row
+import sqlite3
 import secrets
 import uuid
 
@@ -69,243 +67,551 @@ ALLOWED_IMAGES = {
 # DATABASE
 # ============================================================
 
-
 def get_db():
-    """Abre uma conexão PostgreSQL com o Supabase."""
-    database_url = os.environ.get("DATABASE_URL")
 
-    if database_url:
-        return psycopg.connect(database_url, row_factory=dict_row)
-
-    password = os.environ.get("SUPABASE_DB_PASSWORD")
-    if not password:
-        raise RuntimeError(
-            "Defina DATABASE_URL ou SUPABASE_DB_PASSWORD."
-        )
-
-    return psycopg.connect(
-        host="aws-0-us-east-1.pooler.supabase.com",
-        port=5432,
-        dbname="postgres",
-        user="postgres.daulnliocuulnfitqqsv",
-        password=password,
-        row_factory=dict_row,
+    connection = sqlite3.connect(
+        DATABASE,
+        timeout=30,
     )
+
+    connection.row_factory = sqlite3.Row
+
+    connection.execute(
+        "PRAGMA foreign_keys = ON"
+    )
+
+    connection.execute(
+        "PRAGMA journal_mode = WAL"
+    )
+
+    return connection
 
 
 def query_one(sql, parameters=()):
-    with get_db() as db:
-        with db.cursor() as cursor:
-            cursor.execute(sql, parameters)
-            return cursor.fetchone()
+
+    db = get_db()
+
+    try:
+        return db.execute(
+            sql,
+            parameters,
+        ).fetchone()
+
+    finally:
+        db.close()
 
 
 def query_all(sql, parameters=()):
-    with get_db() as db:
-        with db.cursor() as cursor:
-            cursor.execute(sql, parameters)
-            return cursor.fetchall()
+
+    db = get_db()
+
+    try:
+        return db.execute(
+            sql,
+            parameters,
+        ).fetchall()
+
+    finally:
+        db.close()
 
 
 def execute(sql, parameters=()):
-    """Executa SQL e retorna o primeiro valor quando houver RETURNING."""
-    with get_db() as db:
-        with db.cursor() as cursor:
-            cursor.execute(sql, parameters)
-            result = None
-            if cursor.description:
-                row = cursor.fetchone()
-                if row:
-                    result = row[0]
+
+    db = get_db()
+
+    try:
+
+        cursor = db.execute(
+            sql,
+            parameters,
+        )
+
         db.commit()
-        return result
+
+        return cursor.lastrowid
+
+    finally:
+        db.close()
 
 
 # ============================================================
 # DATABASE INITIALIZATION + MIGRATIONS
 # ============================================================
 
-
 def init_database():
-    """Cria a estrutura PostgreSQL necessária pelo Project Z."""
-    statements = [
+
+    db = get_db()
+
+    db.executescript(
         """
+
         CREATE TABLE IF NOT EXISTS users (
-            id BIGSERIAL PRIMARY KEY,
+
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+
             name TEXT NOT NULL,
+
             username TEXT NOT NULL UNIQUE,
+
             birth_date TEXT NOT NULL,
+
             email TEXT NOT NULL UNIQUE,
+
             password_hash TEXT NOT NULL,
+
             profile_photo TEXT,
+
             profile_header TEXT,
-            profile_header_type TEXT NOT NULL DEFAULT 'color',
-            profile_header_value TEXT DEFAULT '#111111',
-            bio TEXT DEFAULT '',
-            status TEXT DEFAULT '',
-            verified INTEGER NOT NULL DEFAULT 0,
-            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-        )
-        """,
-        """
+
+            profile_header_type TEXT
+                NOT NULL DEFAULT 'color',
+
+            profile_header_value TEXT
+                DEFAULT '#111111',
+
+            bio TEXT
+                DEFAULT '',
+
+            status TEXT
+                DEFAULT '',
+
+            verified INTEGER
+                NOT NULL DEFAULT 0,
+
+            created_at TEXT
+                NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+
+
         CREATE TABLE IF NOT EXISTS follows (
-            follower_id BIGINT NOT NULL,
-            following_id BIGINT NOT NULL,
-            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            PRIMARY KEY (follower_id, following_id),
-            FOREIGN KEY (follower_id) REFERENCES users(id) ON DELETE CASCADE,
-            FOREIGN KEY (following_id) REFERENCES users(id) ON DELETE CASCADE,
-            CHECK (follower_id <> following_id)
-        )
-        """,
-        """
+
+            follower_id INTEGER NOT NULL,
+
+            following_id INTEGER NOT NULL,
+
+            created_at TEXT
+                NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+            PRIMARY KEY (
+                follower_id,
+                following_id
+            ),
+
+            FOREIGN KEY (
+                follower_id
+            )
+            REFERENCES users(id)
+            ON DELETE CASCADE,
+
+            FOREIGN KEY (
+                following_id
+            )
+            REFERENCES users(id)
+            ON DELETE CASCADE,
+
+            CHECK (
+                follower_id != following_id
+            )
+        );
+
+
         CREATE TABLE IF NOT EXISTS profile_visits (
-            visitor_id BIGINT NOT NULL,
-            profile_id BIGINT NOT NULL,
-            first_visit_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            PRIMARY KEY (visitor_id, profile_id),
-            FOREIGN KEY (visitor_id) REFERENCES users(id) ON DELETE CASCADE,
-            FOREIGN KEY (profile_id) REFERENCES users(id) ON DELETE CASCADE
-        )
-        """,
-        """
+
+            visitor_id INTEGER NOT NULL,
+
+            profile_id INTEGER NOT NULL,
+
+            first_visit_at TEXT
+                NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+            PRIMARY KEY (
+                visitor_id,
+                profile_id
+            ),
+
+            FOREIGN KEY (
+                visitor_id
+            )
+            REFERENCES users(id)
+            ON DELETE CASCADE,
+
+            FOREIGN KEY (
+                profile_id
+            )
+            REFERENCES users(id)
+            ON DELETE CASCADE
+        );
+
+
         CREATE TABLE IF NOT EXISTS posts (
-            id BIGSERIAL PRIMARY KEY,
-            author_id BIGINT NOT NULL,
-            content TEXT NOT NULL DEFAULT '',
+
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+            author_id INTEGER NOT NULL,
+
+            content TEXT
+                NOT NULL DEFAULT '',
+
             media_filename TEXT,
+
             media_type TEXT,
-            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE CASCADE
-        )
-        """,
-        """
+
+            created_at TEXT
+                NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+            FOREIGN KEY (
+                author_id
+            )
+            REFERENCES users(id)
+            ON DELETE CASCADE
+        );
+
+
         CREATE TABLE IF NOT EXISTS post_likes (
-            user_id BIGINT NOT NULL,
-            post_id BIGINT NOT NULL,
-            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            PRIMARY KEY (user_id, post_id),
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-            FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE
-        )
-        """,
-        """
+
+            user_id INTEGER NOT NULL,
+
+            post_id INTEGER NOT NULL,
+
+            created_at TEXT
+                NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+            PRIMARY KEY (
+                user_id,
+                post_id
+            ),
+
+            FOREIGN KEY (
+                user_id
+            )
+            REFERENCES users(id)
+            ON DELETE CASCADE,
+
+            FOREIGN KEY (
+                post_id
+            )
+            REFERENCES posts(id)
+            ON DELETE CASCADE
+        );
+
+
         CREATE TABLE IF NOT EXISTS comments (
-            id BIGSERIAL PRIMARY KEY,
-            post_id BIGINT NOT NULL,
-            user_id BIGINT NOT NULL,
+
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+            post_id INTEGER NOT NULL,
+
+            user_id INTEGER NOT NULL,
+
             content TEXT NOT NULL,
-            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-        )
-        """,
-        """
+
+            created_at TEXT
+                NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+            FOREIGN KEY (
+                post_id
+            )
+            REFERENCES posts(id)
+            ON DELETE CASCADE,
+
+            FOREIGN KEY (
+                user_id
+            )
+            REFERENCES users(id)
+            ON DELETE CASCADE
+        );
+
+
         CREATE TABLE IF NOT EXISTS conversations (
-            id BIGSERIAL PRIMARY KEY,
-            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-        )
-        """,
-        """
+
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+            created_at TEXT
+                NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+
+
         CREATE TABLE IF NOT EXISTS conversation_members (
-            conversation_id BIGINT NOT NULL,
-            user_id BIGINT NOT NULL,
-            joined_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            PRIMARY KEY (conversation_id, user_id),
-            FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE,
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-        )
-        """,
-        """
+
+            conversation_id INTEGER NOT NULL,
+
+            user_id INTEGER NOT NULL,
+
+            joined_at TEXT
+                NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+            PRIMARY KEY (
+                conversation_id,
+                user_id
+            ),
+
+            FOREIGN KEY (
+                conversation_id
+            )
+            REFERENCES conversations(id)
+            ON DELETE CASCADE,
+
+            FOREIGN KEY (
+                user_id
+            )
+            REFERENCES users(id)
+            ON DELETE CASCADE
+        );
+
+
         CREATE TABLE IF NOT EXISTS messages (
-            id BIGSERIAL PRIMARY KEY,
-            conversation_id BIGINT NOT NULL,
-            sender_id BIGINT NOT NULL,
+
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+            conversation_id INTEGER NOT NULL,
+
+            sender_id INTEGER NOT NULL,
+
             content TEXT NOT NULL,
-            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            read_at TIMESTAMP,
-            FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE,
-            FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE
-        )
-        """,
-        """
+
+            created_at TEXT
+                NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+            read_at TEXT,
+
+            FOREIGN KEY (
+                conversation_id
+            )
+            REFERENCES conversations(id)
+            ON DELETE CASCADE,
+
+            FOREIGN KEY (
+                sender_id
+            )
+            REFERENCES users(id)
+            ON DELETE CASCADE
+        );
+
+
         CREATE TABLE IF NOT EXISTS notifications (
-            id BIGSERIAL PRIMARY KEY,
-            user_id BIGINT NOT NULL,
-            actor_id BIGINT,
+
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+            user_id INTEGER NOT NULL,
+
+            actor_id INTEGER,
+
             type TEXT NOT NULL,
-            reference_id BIGINT,
-            is_read INTEGER NOT NULL DEFAULT 0,
-            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-            FOREIGN KEY (actor_id) REFERENCES users(id) ON DELETE SET NULL
-        )
-        """,
-        """
+
+            reference_id INTEGER,
+
+            is_read INTEGER
+                NOT NULL DEFAULT 0,
+
+            created_at TEXT
+                NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+            FOREIGN KEY (
+                user_id
+            )
+            REFERENCES users(id)
+            ON DELETE CASCADE,
+
+            FOREIGN KEY (
+                actor_id
+            )
+            REFERENCES users(id)
+            ON DELETE SET NULL
+        );
+
+
         CREATE TABLE IF NOT EXISTS communities (
-            id BIGSERIAL PRIMARY KEY,
+
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+
             name TEXT NOT NULL UNIQUE,
-            description TEXT DEFAULT '',
+
+            description TEXT
+                DEFAULT '',
+
             icon TEXT,
-            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-        )
-        """,
-        """
+
+            created_at TEXT
+                NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+
+
         CREATE TABLE IF NOT EXISTS community_members (
-            community_id BIGINT NOT NULL,
-            user_id BIGINT NOT NULL,
-            joined_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            PRIMARY KEY (community_id, user_id),
-            FOREIGN KEY (community_id) REFERENCES communities(id) ON DELETE CASCADE,
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-        )
+
+            community_id INTEGER NOT NULL,
+
+            user_id INTEGER NOT NULL,
+
+            joined_at TEXT
+                NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+            PRIMARY KEY (
+                community_id,
+                user_id
+            ),
+
+            FOREIGN KEY (
+                community_id
+            )
+            REFERENCES communities(id)
+            ON DELETE CASCADE,
+
+            FOREIGN KEY (
+                user_id
+            )
+            REFERENCES users(id)
+            ON DELETE CASCADE
+        );
+
+        """
+    )
+
+    db.commit()
+
+
+    # ========================================================
+    # MIGRATION DA TABELA USERS
+    # ========================================================
+
+    existing_columns = {
+        row["name"]
+        for row in db.execute(
+            "PRAGMA table_info(users)"
+        ).fetchall()
+    }
+
+
+    migrations = {
+
+        "name":
+            "TEXT",
+
+        "username":
+            "TEXT",
+
+        "birth_date":
+            "TEXT",
+
+        "email":
+            "TEXT",
+
+        "password_hash":
+            "TEXT",
+
+        "profile_photo":
+            "TEXT",
+
+        "profile_header":
+            "TEXT",
+
+        "profile_header_type":
+            "TEXT NOT NULL DEFAULT 'color'",
+
+        "profile_header_value":
+            "TEXT DEFAULT '#111111'",
+
+        "bio":
+            "TEXT DEFAULT ''",
+
+        "status":
+            "TEXT DEFAULT ''",
+
+        "verified":
+            "INTEGER NOT NULL DEFAULT 0",
+
+        "created_at":
+            "TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP",
+    }
+
+
+    for column, definition in migrations.items():
+
+        if column not in existing_columns:
+
+            db.execute(
+                f"""
+                ALTER TABLE users
+                ADD COLUMN {column}
+                {definition}
+                """
+            )
+
+
+    db.commit()
+
+
+    # ========================================================
+    # MIGRAÇÕES DAS OUTRAS TABELAS
+    # ========================================================
+
+    # Se alguma versão anterior do projeto possuir tabelas
+    # parcialmente criadas, o CREATE TABLE IF NOT EXISTS
+    # acima preserva os dados e as estruturas existentes.
+    #
+    # As novas tabelas são criadas automaticamente.
+    # ========================================================
+
+
+    # ========================================================
+    # REGRA DO SELO VERIFICADO
+    # ========================================================
+
+    db.execute(
+        """
+        UPDATE users
+
+        SET verified =
+            CASE
+                WHEN username = 'eozffprivacy'
+                THEN 1
+                ELSE 0
+            END
+        """
+    )
+
+    db.commit()
+
+
+    # ========================================================
+    # COMUNIDADE PRINCIPAL
+    # ========================================================
+
+    community = db.execute(
+        """
+        SELECT id
+        FROM communities
+        WHERE name = ?
         """,
-    ]
+        ("Project Z",),
+    ).fetchone()
 
-    with get_db() as db:
-        with db.cursor() as cursor:
-            for statement in statements:
-                cursor.execute(statement)
 
-            # Garante que o único selo permitido continue sendo eozffprivacy.
-            cursor.execute("""
-                UPDATE users
-                SET verified = CASE
-                    WHEN username = 'eozffprivacy' THEN 1
-                    ELSE 0
-                END
-            """)
+    if not community:
 
-            cursor.execute("""
-                INSERT INTO communities (name, description, icon)
-                VALUES (%s, %s, %s)
-                ON CONFLICT (name) DO NOTHING
-            """, (
+        db.execute(
+            """
+            INSERT INTO communities
+            (
+                name,
+                description,
+                icon
+            )
+            VALUES (?, ?, ?)
+            """,
+            (
                 "Project Z",
                 "A comunidade principal da plataforma.",
                 "Z",
-            ))
-        db.commit()
-
-    # Como os IDs existentes foram migrados explicitamente, alinhar as sequences.
-    serial_tables = [
-        "users", "posts", "comments", "conversations",
-        "messages", "notifications", "communities"
-    ]
-
-    with get_db() as db:
-        with db.cursor() as cursor:
-            for table in serial_tables:
-                cursor.execute(f"""
-                    SELECT setval(
-                        pg_get_serial_sequence('{table}', 'id'),
-                        COALESCE((SELECT MAX(id) FROM {table}), 1),
-                        true
-                    )
-                """)
-        db.commit()
+            ),
+        )
 
 
+    db.commit()
+
+    db.close()
+
+
+# ============================================================
 # AUTHENTICATION
 # ============================================================
 
@@ -320,7 +626,7 @@ def get_current_user():
         """
         SELECT *
         FROM users
-        WHERE id = %s
+        WHERE id = ?
         """,
         (user_id,),
     )
@@ -362,7 +668,7 @@ def inject_global_data():
 
             FROM notifications
 
-            WHERE user_id = %s
+            WHERE user_id = ?
 
               AND is_read = 0
             """,
@@ -386,9 +692,9 @@ def inject_global_data():
               ON cm.conversation_id =
                  m.conversation_id
 
-            WHERE cm.user_id = %s
+            WHERE cm.user_id = ?
 
-              AND m.sender_id != %s
+              AND m.sender_id != ?
 
               AND m.read_at IS NULL
             """,
@@ -501,7 +807,7 @@ def create_notification(
             type,
             reference_id
         )
-        VALUES (%s, %s, %s, %s)
+        VALUES (?, ?, ?, ?)
         """,
         (
             user_id,
@@ -520,7 +826,7 @@ def follower_count(user_id):
 
         FROM follows
 
-        WHERE following_id = %s
+        WHERE following_id = ?
         """,
         (user_id,),
     )
@@ -536,7 +842,7 @@ def following_count(user_id):
 
         FROM follows
 
-        WHERE follower_id = %s
+        WHERE follower_id = ?
         """,
         (user_id,),
     )
@@ -552,7 +858,7 @@ def visit_count(user_id):
 
         FROM profile_visits
 
-        WHERE profile_id = %s
+        WHERE profile_id = ?
         """,
         (user_id,),
     )
@@ -571,9 +877,9 @@ def is_following(
 
         FROM follows
 
-        WHERE follower_id = %s
+        WHERE follower_id = ?
 
-          AND following_id = %s
+          AND following_id = ?
         """,
         (
             follower_id,
@@ -719,9 +1025,9 @@ def register():
 
             FROM users
 
-            WHERE username = %s
+            WHERE username = ?
 
-               OR email = %s
+               OR email = ?
             """,
             (
                 username,
@@ -761,8 +1067,7 @@ def register():
                 verified
             )
 
-            VALUES (%s, %s, %s, %s, %s, %s)
-            RETURNING id
+            VALUES (?, ?, ?, ?, ?, ?)
             """,
             (
                 name,
@@ -797,14 +1102,13 @@ def register():
 
             execute(
                 """
-                INSERT INTO
+                INSERT OR IGNORE INTO
                 community_members
                 (
                     community_id,
                     user_id
                 )
-                VALUES (%s, %s)
-                ON CONFLICT (community_id, user_id) DO NOTHING
+                VALUES (?, ?)
                 """,
                 (
                     community["id"],
@@ -865,9 +1169,9 @@ def login():
 
             FROM users
 
-            WHERE username = %s
+            WHERE username = ?
 
-               OR email = %s
+               OR email = ?
             """,
             (
                 login_value,
@@ -906,7 +1210,7 @@ def login():
                     ELSE 0
                 END
 
-            WHERE id = %s
+            WHERE id = ?
             """,
             (user["id"],),
         )
@@ -985,7 +1289,7 @@ def home():
 
                 WHERE pl2.post_id = p.id
 
-                  AND pl2.user_id = %s
+                  AND pl2.user_id = ?
             ) AS liked
 
         FROM posts p
@@ -994,7 +1298,7 @@ def home():
           ON u.id = p.author_id
 
         WHERE
-            p.author_id = %s
+            p.author_id = ?
 
             OR p.author_id IN (
 
@@ -1002,7 +1306,7 @@ def home():
 
                 FROM follows
 
-                WHERE follower_id = %s
+                WHERE follower_id = ?
             )
 
         ORDER BY
@@ -1053,14 +1357,14 @@ def discover():
                 EXISTS (
                     SELECT 1
                     FROM follows f
-                    WHERE f.follower_id = %s
+                    WHERE f.follower_id = ?
                       AND f.following_id = u.id
                 ) AS following
 
             FROM users u
 
-            WHERE u.username LIKE %s
-               OR u.name LIKE %s
+            WHERE u.username LIKE ?
+               OR u.name LIKE ?
 
             ORDER BY
                 u.verified DESC,
@@ -1084,13 +1388,13 @@ def discover():
                 EXISTS (
                     SELECT 1
                     FROM follows f
-                    WHERE f.follower_id = %s
+                    WHERE f.follower_id = ?
                       AND f.following_id = u.id
                 ) AS following
 
             FROM users u
 
-            WHERE u.id != %s
+            WHERE u.id != ?
 
             ORDER BY
                 u.verified DESC,
@@ -1208,7 +1512,7 @@ def create_post():
                 media_type
             )
 
-            VALUES (%s, %s, %s, %s)
+            VALUES (?, ?, ?, ?)
             """,
             (
                 user["id"],
@@ -1248,7 +1552,7 @@ def toggle_like(post_id):
 
         FROM posts
 
-        WHERE id = %s
+        WHERE id = ?
         """,
         (post_id,),
     )
@@ -1265,9 +1569,9 @@ def toggle_like(post_id):
 
         FROM post_likes
 
-        WHERE user_id = %s
+        WHERE user_id = ?
 
-          AND post_id = %s
+          AND post_id = ?
         """,
         (
             user["id"],
@@ -1282,9 +1586,9 @@ def toggle_like(post_id):
             """
             DELETE FROM post_likes
 
-            WHERE user_id = %s
+            WHERE user_id = ?
 
-              AND post_id = %s
+              AND post_id = ?
             """,
             (
                 user["id"],
@@ -1305,7 +1609,7 @@ def toggle_like(post_id):
                 post_id
             )
 
-            VALUES (%s, %s)
+            VALUES (?, ?)
             """,
             (
                 user["id"],
@@ -1330,7 +1634,7 @@ def toggle_like(post_id):
 
         FROM post_likes
 
-        WHERE post_id = %s
+        WHERE post_id = ?
         """,
         (post_id,),
     )
@@ -1364,7 +1668,7 @@ def toggle_follow(username):
 
         FROM users
 
-        WHERE username = %s
+        WHERE username = ?
         """,
         (
             username_clean(username),
@@ -1400,9 +1704,9 @@ def toggle_follow(username):
             """
             DELETE FROM follows
 
-            WHERE follower_id = %s
+            WHERE follower_id = ?
 
-              AND following_id = %s
+              AND following_id = ?
             """,
             (
                 user["id"],
@@ -1423,7 +1727,7 @@ def toggle_follow(username):
                 following_id
             )
 
-            VALUES (%s, %s)
+            VALUES (?, ?)
             """,
             (
                 user["id"],
@@ -1470,7 +1774,7 @@ def profile(username):
 
         FROM users
 
-        WHERE username = %s
+        WHERE username = ?
         """,
         (
             username_clean(username),
@@ -1497,14 +1801,13 @@ def profile(username):
 
         execute(
             """
-            INSERT INTO profile_visits
+            INSERT OR IGNORE INTO profile_visits
             (
                 visitor_id,
                 profile_id
             )
 
-            VALUES (%s, %s)
-            ON CONFLICT (visitor_id, profile_id) DO NOTHING
+            VALUES (?, ?)
             """,
             (
                 current["id"],
@@ -1546,7 +1849,7 @@ def profile(username):
 
                 WHERE pl2.post_id = p.id
 
-                  AND pl2.user_id = %s
+                  AND pl2.user_id = ?
             ) AS liked
 
         FROM posts p
@@ -1554,7 +1857,7 @@ def profile(username):
         JOIN users u
           ON u.id = p.author_id
 
-        WHERE p.author_id = %s
+        WHERE p.author_id = ?
 
         ORDER BY p.id DESC
 
@@ -1737,15 +2040,15 @@ def edit_profile():
             UPDATE users
 
             SET
-                name = %s,
-                status = %s,
-                bio = %s,
-                profile_photo = %s,
-                profile_header = %s,
-                profile_header_type = %s,
-                profile_header_value = %s
+                name = ?,
+                status = ?,
+                bio = ?,
+                profile_photo = ?,
+                profile_header = ?,
+                profile_header_type = ?,
+                profile_header_value = ?
 
-            WHERE id = %s
+            WHERE id = ?
             """,
             (
                 name,
@@ -1823,7 +2126,7 @@ def notifications():
         LEFT JOIN users u
           ON u.id = n.actor_id
 
-        WHERE n.user_id = %s
+        WHERE n.user_id = ?
 
         ORDER BY n.id DESC
 
@@ -1839,7 +2142,7 @@ def notifications():
 
         SET is_read = 1
 
-        WHERE user_id = %s
+        WHERE user_id = ?
         """,
         (user["id"],),
     )
@@ -1872,9 +2175,9 @@ def get_or_create_conversation(
         JOIN conversation_members b
           ON b.conversation_id = c.id
 
-        WHERE a.user_id = %s
+        WHERE a.user_id = ?
 
-          AND b.user_id = %s
+          AND b.user_id = ?
 
         GROUP BY c.id
 
@@ -1899,7 +2202,6 @@ def get_or_create_conversation(
         INSERT INTO conversations
 
         DEFAULT VALUES
-        RETURNING id
         """
     )
 
@@ -1912,7 +2214,7 @@ def get_or_create_conversation(
             user_id
         )
 
-        VALUES (%s, %s)
+        VALUES (?, ?)
         """,
         (
             conversation_id,
@@ -1929,7 +2231,7 @@ def get_or_create_conversation(
             user_id
         )
 
-        VALUES (%s, %s)
+        VALUES (?, ?)
         """,
         (
             conversation_id,
@@ -2007,9 +2309,9 @@ def chat():
         JOIN users other
           ON other.id = other_member.user_id
 
-        WHERE mine.user_id = %s
+        WHERE mine.user_id = ?
 
-          AND other_member.user_id != %s
+          AND other_member.user_id != ?
 
         ORDER BY
             last_message_at DESC,
@@ -2045,7 +2347,7 @@ def conversation(username):
 
         FROM users
 
-        WHERE username = %s
+        WHERE username = ?
         """,
         (
             username_clean(username),
@@ -2080,9 +2382,9 @@ def conversation(username):
         SET read_at =
             CURRENT_TIMESTAMP
 
-        WHERE conversation_id = %s
+        WHERE conversation_id = ?
 
-          AND sender_id != %s
+          AND sender_id != ?
 
           AND read_at IS NULL
         """,
@@ -2108,7 +2410,7 @@ def conversation(username):
         JOIN users u
           ON u.id = m.sender_id
 
-        WHERE m.conversation_id = %s
+        WHERE m.conversation_id = ?
 
         ORDER BY m.id ASC
 
@@ -2147,9 +2449,9 @@ def send_message(
 
         FROM conversation_members
 
-        WHERE conversation_id = %s
+        WHERE conversation_id = ?
 
-          AND user_id = %s
+          AND user_id = ?
         """,
         (
             conversation_id,
@@ -2207,8 +2509,7 @@ def send_message(
             content
         )
 
-        VALUES (%s, %s, %s)
-        RETURNING id
+        VALUES (?, ?, ?)
         """,
         (
             conversation_id,
@@ -2224,9 +2525,9 @@ def send_message(
 
         FROM conversation_members
 
-        WHERE conversation_id = %s
+        WHERE conversation_id = ?
 
-          AND user_id != %s
+          AND user_id != ?
 
         LIMIT 1
         """,
@@ -2277,9 +2578,9 @@ def api_messages(
 
         FROM conversation_members
 
-        WHERE conversation_id = %s
+        WHERE conversation_id = ?
 
-          AND user_id = %s
+          AND user_id = ?
         """,
         (
             conversation_id,
@@ -2326,9 +2627,9 @@ def api_messages(
         JOIN users u
           ON u.id = m.sender_id
 
-        WHERE m.conversation_id = %s
+        WHERE m.conversation_id = ?
 
-          AND m.id > %s
+          AND m.id > ?
 
         ORDER BY m.id ASC
 
@@ -2379,7 +2680,7 @@ def community(community_id):
 
         FROM communities c
 
-        WHERE c.id = %s
+        WHERE c.id = ?
         """,
         (community_id,),
     )
@@ -2399,9 +2700,9 @@ def community(community_id):
 
         FROM community_members
 
-        WHERE community_id = %s
+        WHERE community_id = ?
 
-          AND user_id = %s
+          AND user_id = ?
         """,
         (
             community_id,
@@ -2438,7 +2739,7 @@ def toggle_community(
 
         FROM communities
 
-        WHERE id = %s
+        WHERE id = ?
         """,
         (community_id,),
     )
@@ -2455,9 +2756,9 @@ def toggle_community(
 
         FROM community_members
 
-        WHERE community_id = %s
+        WHERE community_id = ?
 
-          AND user_id = %s
+          AND user_id = ?
         """,
         (
             community_id,
@@ -2472,9 +2773,9 @@ def toggle_community(
             """
             DELETE FROM community_members
 
-            WHERE community_id = %s
+            WHERE community_id = ?
 
-              AND user_id = %s
+              AND user_id = ?
             """,
             (
                 community_id,
@@ -2495,7 +2796,7 @@ def toggle_community(
                 user_id
             )
 
-            VALUES (%s, %s)
+            VALUES (?, ?)
             """,
             (
                 community_id,
