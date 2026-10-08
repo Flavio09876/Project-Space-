@@ -123,7 +123,7 @@ def execute(sql, parameters=()):
             if cursor.description:
                 row = cursor.fetchone()
                 if row:
-                    result = row[0]
+                    result = next(iter(row.values()))
         db.commit()
         return result
 
