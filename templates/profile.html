@@ -142,58 +142,37 @@
 
 
         <!-- ESTATÍSTICAS -->
-        <div class="z-profile-stats">
+        <div class="z-profile-stats" id="z-profile-stats">
 
             <div class="z-stat">
-
-                <strong>
-                    {{ posts_count|default(0) }}
-                </strong>
-
-                <span>
-                    Publicações
-                </span>
-
+                <strong>{{ posts_count|default(0) }}</strong>
+                <span>Publicações</span>
             </div>
 
+            <a class="z-stat z-stat-link"
+               href="{{ url_for('profile_connections', username=profile.username, list_type='followers') }}">
+                <strong data-followers-count>{{ followers_count|default(0) }}</strong>
+                <span>Seguidores</span>
+            </a>
 
+            <a class="z-stat z-stat-link"
+               href="{{ url_for('profile_connections', username=profile.username, list_type='following') }}">
+                <strong>{{ following_count|default(0) }}</strong>
+                <span>Seguindo</span>
+            </a>
+
+            {% if profile.id == current_user.id %}
+            <a class="z-stat z-stat-link"
+               href="{{ url_for('profile_connections', username=profile.username, list_type='visits') }}">
+                <strong>{{ visits_count|default(0) }}</strong>
+                <span>Visitas</span>
+            </a>
+            {% else %}
             <div class="z-stat">
-
-                <strong data-followers-count>
-                    {{ followers_count|default(0) }}
-                </strong>
-
-                <span>
-                    Seguidores
-                </span>
-
+                <strong>{{ visits_count|default(0) }}</strong>
+                <span>Visitas</span>
             </div>
-
-
-            <div class="z-stat">
-
-                <strong>
-                    {{ following_count|default(0) }}
-                </strong>
-
-                <span>
-                    Seguindo
-                </span>
-
-            </div>
-
-
-            <div class="z-stat">
-
-                <strong>
-                    {{ visits_count|default(0) }}
-                </strong>
-
-                <span>
-                    Visitas
-                </span>
-
-            </div>
+            {% endif %}
 
         </div>
 

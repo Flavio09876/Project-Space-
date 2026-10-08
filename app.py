@@ -1596,6 +1596,104 @@ def profile(username):
     )
 
 
+
+# ============================================================
+# PROFILE CONNECTION LISTS
+# ============================================================
+
+@app.get("/u/<username>/<list_type>")
+@login_required
+def profile_connections(username, list_type):
+
+    current = get_current_user()
+
+    target = query_one(
+        "SELECT * FROM users WHERE username = %s",
+        (username_clean(username),),
+    )
+
+    if not target:
+        abort(404)
+
+    titles = {
+        "followers": "Seguidores",
+        "following": "Seguindo",
+        "visits": "Visitas ao perfil",
+    }
+
+    if list_type not in titles:
+        abort(404)
+
+    if list_type == "followers":
+        people = query_all(
+            """
+            SELECT
+                u.id,
+                u.name,
+                u.username,
+                u.profile_photo,
+                u.verified,
+                u.bio,
+                f.created_at AS activity_at
+            FROM follows f
+            JOIN users u ON u.id = f.follower_id
+            WHERE f.following_id = %s
+            ORDER BY f.created_at DESC, u.username ASC
+            """,
+            (target["id"],),
+        )
+
+    elif list_type == "following":
+        people = query_all(
+            """
+            SELECT
+                u.id,
+                u.name,
+                u.username,
+                u.profile_photo,
+                u.verified,
+                u.bio,
+                f.created_at AS activity_at
+            FROM follows f
+            JOIN users u ON u.id = f.following_id
+            WHERE f.follower_id = %s
+            ORDER BY f.created_at DESC, u.username ASC
+            """,
+            (target["id"],),
+        )
+
+    else:
+        # Somente o dono do perfil pode ver quem o visitou.
+        if current["id"] != target["id"]:
+            abort(403)
+
+        people = query_all(
+            """
+            SELECT
+                u.id,
+                u.name,
+                u.username,
+                u.profile_photo,
+                u.verified,
+                u.bio,
+                v.first_visit_at AS activity_at
+            FROM profile_visits v
+            JOIN users u ON u.id = v.visitor_id
+            WHERE v.profile_id = %s
+            ORDER BY v.first_visit_at DESC, u.username ASC
+            """,
+            (target["id"],),
+        )
+
+    return render_template(
+        "user_list.html",
+        profile=target,
+        people=people,
+        list_type=list_type,
+        list_title=titles[list_type],
+    )
+
+
 # ============================================================
 # EDIT PROFILE
 # ============================================================

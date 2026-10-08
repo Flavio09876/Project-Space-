@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block title %}{{ list_title }} de @{{ profile.username }} — Project Z{% endblock %}
+
+{% block content %}
+<section class="connections-page">
+
+    <header class="connections-header">
+        <a class="connections-back"
+           href="{{ url_for('profile', username=profile.username) }}">
+            ← Voltar ao perfil
+        </a>
+
+        <div>
+            <h1>{{ list_title }}</h1>
+            <p>
+                <a href="{{ url_for('profile', username=profile.username) }}">
+                    @{{ profile.username }}
+                </a>
+                · {{ people|length }}
+                {% if people|length == 1 %}conta{% else %}contas{% endif %}
+            </p>
+        </div>
+
+        <nav class="connections-tabs" aria-label="Listas do perfil">
+            <a class="{% if list_type == 'followers' %}active{% endif %}"
+               href="{{ url_for('profile_connections', username=profile.username, list_type='followers') }}">
+                Seguidores
+            </a>
+            <a class="{% if list_type == 'following' %}active{% endif %}"
+               href="{{ url_for('profile_connections', username=profile.username, list_type='following') }}">
+                Seguindo
+            </a>
+            {% if profile.id == current_user.id %}
+            <a class="{% if list_type == 'visits' %}active{% endif %}"
+               href="{{ url_for('profile_connections', username=profile.username, list_type='visits') }}">
+                Visitas
+            </a>
+            {% endif %}
+        </nav>
+    </header>
+
+    {% if people %}
+    <div class="connections-list">
+        {% for person in people %}
+        <article class="connection-person">
+
+            <a class="connection-avatar"
+               href="{{ url_for('profile', username=person.username) }}"
+               aria-label="Abrir perfil de @{{ person.username }}">
+                {% if person.profile_photo %}
+                    <img
+                        src="{{ person.profile_photo if person.profile_photo.startswith('http') else url_for('avatar_file', filename=person.profile_photo) }}"
+                        alt="Foto de {{ person.name }}"
+                        loading="lazy"
+                    >
+                {% else %}
+                    <span>{{ person.name[0]|upper }}</span>
+                {% endif %}
+            </a>
+
+            <div class="connection-person-info">
+                <a class="connection-name"
+                   href="{{ url_for('profile', username=person.username) }}">
+                    {{ person.name }}
+                    {% if person.verified %}
+                        <span class="connection-verified" aria-label="Verificado">✓</span>
+                    {% endif %}
+                </a>
+
+                <a class="connection-handle"
+                   href="{{ url_for('profile', username=person.username) }}">
+                    @{{ person.username }}
+                </a>
+
+                {% if person.bio %}
+                <p>{{ person.bio }}</p>
+                {% endif %}
+
+                {% if list_type == 'visits' and person.activity_at %}
+                <small class="connection-date">
+                    Primeira visita: {{ person.activity_at.strftime('%d/%m/%Y') }}
+                </small>
+                {% endif %}
+            </div>
+
+            <a class="connection-open"
+               href="{{ url_for('profile', username=person.username) }}">
+                Ver perfil
+            </a>
+
+        </article>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="connections-empty">
+        <span class="connections-empty-icon">
+            {% if list_type == 'followers' %}♧
+            {% elif list_type == 'following' %}◎
+            {% else %}◷{% endif %}
+        </span>
+
+        <h2>
+            {% if list_type == 'followers' %}Nenhum seguidor ainda
+            {% elif list_type == 'following' %}Ainda não segue ninguém
+            {% else %}Nenhuma visita registrada{% endif %}
+        </h2>
+
+        <p>
+            {% if list_type == 'visits' %}
+                As visitas de outras contas aparecerão aqui quando forem registradas.
+            {% else %}
+                Esta lista será atualizada conforme as contas interagirem na plataforma.
+            {% endif %}
+        </p>
+    </div>
+    {% endif %}
+
+</section>
+{% endblock %}
