@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}Notificações — Project Z{% endblock %}
+
+{% block content %}
+
+<div class="page-container">
+
+    <div class="page-heading">
+
+        <div>
+            <span class="eyebrow">ATIVIDADE</span>
+            <h1>Notificações</h1>
+        </div>
+
+    </div>
+
+
+    <section class="notifications-card">
+
+        {% if notifications %}
+
+            {% for notification in notifications %}
+
+            <article class="notification-item {% if not notification.read %}unread{% endif %}">
+
+                <div class="notification-icon">
+
+                    {% if notification.type == 'follow' %}
+                        ♡
+                    {% elif notification.type == 'like' %}
+                        ♥
+                    {% elif notification.type == 'comment' %}
+                        ◌
+                    {% else %}
+                        Z
+                    {% endif %}
+
+                </div>
+
+
+                <div class="notification-content">
+
+                    <p>
+
+                        <strong>
+                            {{ notification.actor_name }}
+                        </strong>
+
+                        {% if notification.type == 'follow' %}
+
+                            começou a seguir você.
+
+                        {% elif notification.type == 'like' %}
+
+                            curtiu sua publicação.
+
+                        {% elif notification.type == 'comment' %}
+
+                            comentou em sua publicação.
+
+                        {% else %}
+
+                            interagiu com você.
+
+                        {% endif %}
+
+                    </p>
+
+                    <time>
+                        {{ notification.created_at }}
+                    </time>
+
+                </div>
+
+            </article>
+
+            {% endfor %}
+
+        {% else %}
+
+            <div class="empty-state">
+
+                <div class="empty-icon">◌</div>
+
+                <h2>Nenhuma notificação</h2>
+
+                <p>
+                    Quando alguém interagir com você,
+                    aparecerá aqui.
+                </p>
+
+            </div>
+
+        {% endif %}
+
+    </section>
+
+</div>
+
+{% endblock %}

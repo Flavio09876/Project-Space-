@@ -1,0 +1,310 @@
+{% extends "base.html" %}
+
+{% block title %}Editar perfil — Project Z{% endblock %}
+
+{% block content %}
+
+<div class="settings-page">
+
+    <div class="page-heading">
+        <div>
+            <span class="eyebrow">CONFIGURAÇÕES</span>
+            <h1>Editar perfil</h1>
+        </div>
+
+        <a href="{{ url_for('profile', username=current_user.username) }}"
+           class="button button-secondary">
+            Voltar
+        </a>
+    </div>
+
+
+    <form method="POST"
+          enctype="multipart/form-data"
+          class="settings-card">
+
+        <section class="settings-section">
+
+            <div class="settings-section-title">
+                <h2>Identidade</h2>
+                <p>Personalize as informações que aparecem no seu perfil.</p>
+            </div>
+
+
+            <div class="profile-preview">
+
+                {% if current_user.profile_photo %}
+
+                    <img
+                        id="avatar-preview"
+                        class="profile-avatar"
+                        src="{{ url_for('avatar_file', filename=current_user.profile_photo) }}"
+                        alt=""
+                    >
+
+                {% else %}
+
+                    <div id="avatar-placeholder"
+                         class="profile-avatar avatar-placeholder">
+                        {{ current_user.name[0]|upper }}
+                    </div>
+
+                    <img
+                        id="avatar-preview"
+                        class="profile-avatar"
+                        src=""
+                        alt=""
+                        hidden
+                    >
+
+                {% endif %}
+
+                <div>
+
+                    <strong>Foto de perfil</strong>
+
+                    <p>
+                        JPG, PNG ou WEBP.
+                    </p>
+
+                    <label class="button button-secondary button-small"
+                           for="profile-photo">
+                        Alterar foto
+                    </label>
+
+                    <input
+                        type="file"
+                        id="profile-photo"
+                        name="profile_photo"
+                        accept="image/png,image/jpeg,image/webp"
+                        hidden
+                        onchange="previewAvatar(this)"
+                    >
+
+                </div>
+
+            </div>
+
+
+            <label>
+                Nome
+            </label>
+
+            <input
+                type="text"
+                name="name"
+                value="{{ current_user.name }}"
+                maxlength="80"
+                required
+            >
+
+
+            <label>
+                Status
+            </label>
+
+            <input
+                type="text"
+                name="status"
+                value="{{ current_user.status or '' }}"
+                maxlength="120"
+                placeholder="Uma frase curta sobre você"
+            >
+
+
+            <label>
+                Biografia
+            </label>
+
+            <textarea
+                name="bio"
+                maxlength="500"
+                placeholder="Conte um pouco sobre você..."
+            >{{ current_user.bio or '' }}</textarea>
+
+        </section>
+
+
+        <section class="settings-section">
+
+            <div class="settings-section-title">
+
+                <h2>Cabeçalho do perfil</h2>
+
+                <p>
+                    Escolha uma cor, gradiente ou imagem para a área superior.
+                </p>
+
+            </div>
+
+
+            <div class="header-options">
+
+                <label class="header-option">
+
+                    <input
+                        type="radio"
+                        name="header_type"
+                        value="color"
+                        {% if current_user.profile_header_type == 'color' %}
+                            checked
+                        {% endif %}
+                    >
+
+                    <span>
+                        Cor
+                    </span>
+
+                </label>
+
+
+                <label class="header-option">
+
+                    <input
+                        type="radio"
+                        name="header_type"
+                        value="gradient"
+                        {% if current_user.profile_header_type == 'gradient' %}
+                            checked
+                        {% endif %}
+                    >
+
+                    <span>
+                        Gradiente
+                    </span>
+
+                </label>
+
+
+                <label class="header-option">
+
+                    <input
+                        type="radio"
+                        name="header_type"
+                        value="image"
+                        {% if current_user.profile_header_type == 'image' %}
+                            checked
+                        {% endif %}
+                    >
+
+                    <span>
+                        Imagem
+                    </span>
+
+                </label>
+
+            </div>
+
+
+            <div class="header-preview"
+                 id="header-preview"
+                 style="
+                 {% if current_user.profile_header_type == 'image' and current_user.profile_header_value %}
+                     background-image:url('{{ url_for('header_file', filename=current_user.profile_header_value) }}');
+                 {% elif current_user.profile_header_value %}
+                     background:{{ current_user.profile_header_value }};
+                 {% endif %}
+                 ">
+            </div>
+
+
+            <div class="header-control color-control">
+
+                <label>
+                    Cor do cabeçalho
+                </label>
+
+                <div class="color-input">
+
+                    <input
+                        type="color"
+                        name="header_color"
+                        value="#151515"
+                        onchange="updateHeaderColor(this.value)"
+                    >
+
+                    <span>
+                        Escolha uma cor
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <div class="header-control gradient-control">
+
+                <label>
+                    Gradiente
+                </label>
+
+                <select
+                    name="header_gradient"
+                    onchange="updateHeaderGradient(this.value)"
+                >
+
+                    <option value="linear-gradient(135deg,#090909,#8B0000)">
+                        Preto → Vermelho escuro
+                    </option>
+
+                    <option value="linear-gradient(135deg,#050505,#301050)">
+                        Preto → Roxo
+                    </option>
+
+                    <option value="linear-gradient(135deg,#0b1115,#164e63)">
+                        Preto → Azul profundo
+                    </option>
+
+                    <option value="linear-gradient(135deg,#171717,#555555)">
+                        Cinza escuro
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <div class="header-control image-control">
+
+                <label>
+                    Imagem do cabeçalho
+                </label>
+
+                <label class="upload-button"
+                       for="header-image">
+                    Escolher imagem
+                </label>
+
+                <input
+                    type="file"
+                    id="header-image"
+                    name="header_image"
+                    accept="image/png,image/jpeg,image/webp"
+                    onchange="previewHeader(this)"
+                >
+
+            </div>
+
+        </section>
+
+
+        <div class="settings-footer">
+
+            <a href="{{ url_for('profile', username=current_user.username) }}"
+               class="button button-secondary">
+                Cancelar
+            </a>
+
+            <button
+                type="submit"
+                class="button button-primary">
+                Salvar alterações
+            </button>
+
+        </div>
+
+    </form>
+
+</div>
+
+{% endblock %}

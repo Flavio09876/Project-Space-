@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+
+    <title>{% block title %}Project Z{% endblock %}</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body>
+
+<div class="app-shell">
+
+    <header class="topbar">
+
+        <a href="{{ url_for('home') if current_user else url_for('welcome') }}"
+           class="brand">
+            <span class="brand-mark">Z</span>
+            <span class="brand-name">Project Z</span>
+        </a>
+
+        {% if current_user %}
+        <nav class="top-navigation">
+
+            <a href="{{ url_for('home') }}"
+               class="nav-item {% if request.endpoint == 'home' %}active{% endif %}">
+                Início
+            </a>
+
+            <a href="{{ url_for('discover') }}"
+               class="nav-item {% if request.endpoint == 'discover' %}active{% endif %}">
+                Descobrir
+            </a>
+
+            <a href="{{ url_for('chat') }}"
+               class="nav-item {% if request.endpoint in ['chat', 'conversation'] %}active{% endif %}">
+                Mensagens
+            </a>
+
+            <a href="{{ url_for('notifications') }}"
+               class="nav-item {% if request.endpoint == 'notifications' %}active{% endif %}">
+                Notificações
+                {% if unread_notifications %}
+                    <span class="notification-dot"></span>
+                {% endif %}
+            </a>
+
+        </nav>
+
+        <div class="top-profile">
+
+            <a href="{{ url_for('profile', username=current_user.username) }}"
+               class="mini-profile">
+
+                {% if current_user.profile_photo %}
+                    <img src="{{ url_for('avatar_file', filename=current_user.profile_photo) }}"
+                         alt="Foto de perfil">
+                {% else %}
+                    <div class="avatar-placeholder">
+                        {{ current_user.name[0]|upper }}
+                    </div>
+                {% endif %}
+
+            </a>
+
+            <div class="profile-dropdown">
+
+                <a href="{{ url_for('profile', username=current_user.username) }}">
+                    Meu perfil
+                </a>
+
+                <a href="{{ url_for('edit_profile') }}">
+                    Editar perfil
+                </a>
+
+                <a href="{{ url_for('logout') }}" class="danger-link">
+                    Sair
+                </a>
+
+            </div>
+
+        </div>
+
+        {% endif %}
+
+    </header>
+
+
+    <main class="main-content">
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-container">
+
+                    {% for category, message in messages %}
+
+                        <div class="flash-message {{ category }}">
+                            <span>{{ message }}</span>
+
+                            <button type="button"
+                                    onclick="this.parentElement.remove()">
+                                ×
+                            </button>
+                        </div>
+
+                    {% endfor %}
+
+                </div>
+            {% endif %}
+        {% endwith %}
+
+
+        {% block content %}{% endblock %}
+
+    </main>
+
+
+    {% if current_user %}
+    <footer class="mobile-navigation">
+
+        <a href="{{ url_for('home') }}"
+           class="{% if request.endpoint == 'home' %}active{% endif %}">
+            <span>⌂</span>
+            <small>Início</small>
+        </a>
+
+        <a href="{{ url_for('discover') }}"
+           class="{% if request.endpoint == 'discover' %}active{% endif %}">
+            <span>⌕</span>
+            <small>Descobrir</small>
+        </a>
+
+        <a href="{{ url_for('create_post') }}"
+           class="create-button">
+            <span>＋</span>
+        </a>
+
+        <a href="{{ url_for('chat') }}"
+           class="{% if request.endpoint in ['chat', 'conversation'] %}active{% endif %}">
+            <span>◌</span>
+            <small>Chat</small>
+        </a>
+
+        <a href="{{ url_for('profile', username=current_user.username) }}"
+           class="{% if request.endpoint == 'profile' %}active{% endif %}">
+            <span>◎</span>
+            <small>Perfil</small>
+        </a>
+
+    </footer>
+    {% endif %}
+
+</div>
+
+
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+
+{% block scripts %}{% endblock %}
+
+</body>
+</html>

@@ -1,0 +1,252 @@
+{% extends "base.html" %}
+
+{% block title %}Início — Project Z{% endblock %}
+
+{% block content %}
+
+<div class="page-layout">
+
+    <section class="feed-column">
+
+        <div class="page-heading">
+            <div>
+                <span class="eyebrow">PROJECT Z</span>
+                <h1>Início</h1>
+            </div>
+
+            <a href="{{ url_for('create_post') }}"
+               class="button button-primary">
+                + Publicar
+            </a>
+        </div>
+
+
+        <div class="composer-card">
+
+            <a href="{{ url_for('profile', username=current_user.username) }}"
+               class="avatar-link">
+
+                {% if current_user.profile_photo %}
+                    <img
+                        class="avatar avatar-medium"
+                        src="{{ url_for('avatar_file', filename=current_user.profile_photo) }}"
+                        alt=""
+                    >
+                {% else %}
+                    <div class="avatar avatar-medium avatar-placeholder">
+                        {{ current_user.name[0]|upper }}
+                    </div>
+                {% endif %}
+
+            </a>
+
+            <a href="{{ url_for('create_post') }}"
+               class="composer-input">
+                O que está acontecendo?
+            </a>
+
+        </div>
+
+
+        {% if posts %}
+
+            <div class="post-list">
+
+                {% for post in posts %}
+
+                <article class="post-card">
+
+                    <div class="post-header">
+
+                        <a href="{{ url_for('profile', username=post.username) }}"
+                           class="post-author">
+
+                            {% if post.profile_photo %}
+
+                                <img
+                                    class="avatar avatar-small"
+                                    src="{{ url_for('avatar_file', filename=post.profile_photo) }}"
+                                    alt=""
+                                >
+
+                            {% else %}
+
+                                <div class="avatar avatar-small avatar-placeholder">
+                                    {{ post.name[0]|upper }}
+                                </div>
+
+                            {% endif %}
+
+                            <div>
+                                <strong>
+                                    {{ post.name }}
+
+                                    {% if post.verified %}
+                                        <span class="verified-badge"
+                                              title="Conta verificada">
+                                            ✓
+                                        </span>
+                                    {% endif %}
+                                </strong>
+
+                                <span>
+                                    @{{ post.username }}
+                                </span>
+                            </div>
+
+                        </a>
+
+                        <time>
+                            {{ post.created_at }}
+                        </time>
+
+                    </div>
+
+
+                    <div class="post-content">
+
+                        {% if post.content %}
+                            <p>{{ post.content }}</p>
+                        {% endif %}
+
+                        {% if post.image %}
+
+                            <img
+                                class="post-image"
+                                src="{{ url_for('post_file', filename=post.image) }}"
+                                alt="Imagem da publicação"
+                            >
+
+                        {% endif %}
+
+                    </div>
+
+
+                    <div class="post-actions">
+
+                        <button
+                            type="button"
+                            class="post-action like-button {% if post.liked %}liked{% endif %}"
+                            data-post-id="{{ post.id }}"
+                            onclick="toggleLike(this)">
+
+                            <span>♡</span>
+
+                            <span class="like-count">
+                                {{ post.likes }}
+                            </span>
+
+                        </button>
+
+                        <a
+                            href="{{ url_for('profile', username=post.username) }}"
+                            class="post-action">
+
+                            <span>◌</span>
+
+                            <span>
+                                {{ post.comments }}
+                            </span>
+
+                        </a>
+
+                    </div>
+
+                </article>
+
+                {% endfor %}
+
+            </div>
+
+        {% else %}
+
+            <div class="empty-state">
+
+                <div class="empty-icon">Z</div>
+
+                <h2>Seu feed está vazio</h2>
+
+                <p>
+                    Comece seguindo pessoas ou faça sua primeira publicação.
+                </p>
+
+                <a href="{{ url_for('discover') }}"
+                   class="button button-secondary">
+                    Descobrir pessoas
+                </a>
+
+            </div>
+
+        {% endif %}
+
+    </section>
+
+
+    <aside class="side-column">
+
+        <div class="side-card">
+
+            <div class="side-card-header">
+                <h2>Seu perfil</h2>
+
+                <a href="{{ url_for('profile', username=current_user.username) }}">
+                    Ver
+                </a>
+            </div>
+
+            <div class="side-profile">
+
+                {% if current_user.profile_photo %}
+
+                    <img
+                        class="avatar avatar-large"
+                        src="{{ url_for('avatar_file', filename=current_user.profile_photo) }}"
+                        alt=""
+                    >
+
+                {% else %}
+
+                    <div class="avatar avatar-large avatar-placeholder">
+                        {{ current_user.name[0]|upper }}
+                    </div>
+
+                {% endif %}
+
+                <strong>
+                    {{ current_user.name }}
+
+                    {% if current_user.verified %}
+                        <span class="verified-badge">✓</span>
+                    {% endif %}
+                </strong>
+
+                <span>@{{ current_user.username }}</span>
+
+            </div>
+
+        </div>
+
+
+        <div class="side-card">
+
+            <div class="side-card-header">
+                <h2>Project Z</h2>
+            </div>
+
+            <p class="side-description">
+                Um espaço para compartilhar,
+                conversar e encontrar novas pessoas.
+            </p>
+
+            <a href="{{ url_for('community', community_id=1) }}"
+               class="side-link">
+                Comunidade Project Z →
+            </a>
+
+        </div>
+
+    </aside>
+
+</div>
+
+{% endblock %}

@@ -1,0 +1,424 @@
+{% extends "base.html" %}
+
+{% set profile = profile if profile is defined else user %}
+
+{% block title %}@{{ profile.username }} — Project Z{% endblock %}
+
+{% block content %}
+
+<div class="z-profile">
+
+    <!-- CAPA -->
+    <section
+        class="z-profile-cover
+        {% if profile.profile_header_type == 'image' and profile.profile_header_value %}
+            has-cover-image
+        {% endif %}"
+        {% if profile.profile_header_type == 'image' and profile.profile_header_value %}
+        style="background-image:url('{{ url_for('header_file', filename=profile.profile_header_value) }}');"
+        {% elif profile.profile_header_value %}
+        style="background:{{ profile.profile_header_value }};"
+        {% endif %}
+    >
+        <div class="z-cover-shade"></div>
+    </section>
+
+
+    <!-- ÁREA PRINCIPAL -->
+    <section class="z-profile-body">
+
+        <!-- TOPO -->
+        <div class="z-profile-top">
+
+            <div class="z-profile-avatar-wrap">
+
+                {% if profile.profile_photo %}
+
+                    <img
+                        src="{{ url_for('avatar_file', filename=profile.profile_photo) }}"
+                        class="z-profile-avatar"
+                        alt="Foto de {{ profile.name }}"
+                    >
+
+                {% else %}
+
+                    <div class="z-profile-avatar z-avatar-placeholder">
+                        {{ profile.name[0]|upper }}
+                    </div>
+
+                {% endif %}
+
+            </div>
+
+
+            <div class="z-profile-actions">
+
+                {% if profile.id == current_user.id %}
+
+                    <a
+                        href="{{ url_for('edit_profile') }}"
+                        class="z-profile-button secondary"
+                    >
+                        Editar perfil
+                    </a>
+
+                {% else %}
+
+                    <button
+                        type="button"
+                        class="z-profile-button secondary follow-button"
+                        data-username="{{ profile.username }}"
+                        data-following="{{ 'true' if following else 'false' }}"
+                        onclick="toggleFollow(this)"
+                    >
+                        {% if following %}
+                            Seguindo
+                        {% else %}
+                            Seguir
+                        {% endif %}
+                    </button>
+
+                    <a
+                        href="{{ url_for('conversation', username=profile.username) }}"
+                        class="z-profile-button primary"
+                    >
+                        Mensagem
+                    </a>
+
+                {% endif %}
+
+            </div>
+
+        </div>
+
+
+        <!-- IDENTIDADE -->
+        <div class="z-profile-identity">
+
+            <div class="z-profile-name-row">
+
+                <h1>
+                    {{ profile.name }}
+                </h1>
+
+                {% if profile.verified %}
+                    <span
+                        class="z-verified"
+                        title="Conta verificada"
+                        aria-label="Conta verificada"
+                    >
+                        ✓
+                    </span>
+                {% endif %}
+
+            </div>
+
+            <div class="z-profile-handle">
+                @{{ profile.username }}
+            </div>
+
+        </div>
+
+
+        <!-- STATUS -->
+        {% if profile.status %}
+
+        <div class="z-profile-status">
+            <span class="z-status-dot"></span>
+            {{ profile.status }}
+        </div>
+
+        {% endif %}
+
+
+        <!-- BIO -->
+        {% if profile.bio %}
+
+        <div class="z-profile-bio">
+            {{ profile.bio }}
+        </div>
+
+        {% endif %}
+
+
+        <!-- ESTATÍSTICAS -->
+        <div class="z-profile-stats">
+
+            <div class="z-stat">
+
+                <strong>
+                    {{ posts_count|default(0) }}
+                </strong>
+
+                <span>
+                    Publicações
+                </span>
+
+            </div>
+
+
+            <div class="z-stat">
+
+                <strong>
+                    {{ followers_count|default(0) }}
+                </strong>
+
+                <span>
+                    Seguidores
+                </span>
+
+            </div>
+
+
+            <div class="z-stat">
+
+                <strong>
+                    {{ following_count|default(0) }}
+                </strong>
+
+                <span>
+                    Seguindo
+                </span>
+
+            </div>
+
+
+            <div class="z-stat">
+
+                <strong>
+                    {{ visits_count|default(0) }}
+                </strong>
+
+                <span>
+                    Visitas
+                </span>
+
+            </div>
+
+        </div>
+
+
+        <!-- ABAS -->
+        <nav class="z-profile-tabs">
+
+            <a
+                href="#posts"
+                class="z-profile-tab active"
+            >
+                Publicações
+            </a>
+
+            <a
+                href="#about"
+                class="z-profile-tab"
+            >
+                Sobre
+            </a>
+
+        </nav>
+
+
+        <!-- PUBLICAÇÕES -->
+        <section
+            id="posts"
+            class="z-profile-feed"
+        >
+
+            {% if posts %}
+
+                {% for post in posts %}
+
+                <article class="z-post">
+
+                    <div class="z-post-top">
+
+                        <div class="z-post-user">
+
+                            {% if profile.profile_photo %}
+
+                                <img
+                                    src="{{ url_for('avatar_file', filename=profile.profile_photo) }}"
+                                    class="z-post-avatar"
+                                    alt=""
+                                >
+
+                            {% else %}
+
+                                <div class="z-post-avatar z-avatar-placeholder">
+                                    {{ profile.name[0]|upper }}
+                                </div>
+
+                            {% endif %}
+
+
+                            <div class="z-post-user-info">
+
+                                <div class="z-post-name">
+
+                                    {{ profile.name }}
+
+                                    {% if profile.verified %}
+
+                                        <span class="z-verified z-verified-small">
+                                            ✓
+                                        </span>
+
+                                    {% endif %}
+
+                                </div>
+
+                                <div class="z-post-handle">
+                                    @{{ profile.username }}
+                                </div>
+
+                            </div>
+
+                        </div>
+
+
+                        <time class="z-post-date">
+                            {{ post.created_at }}
+                        </time>
+
+                    </div>
+
+
+                    {% if post.content %}
+
+                    <div class="z-post-text">
+                        {{ post.content }}
+                    </div>
+
+                    {% endif %}
+
+
+                    {% if post.image %}
+
+                    <div class="z-post-media">
+
+                        <img
+                            src="{{ url_for('post_file', filename=post.image) }}"
+                            alt=""
+                        >
+
+                    </div>
+
+                    {% endif %}
+
+
+                    <div class="z-post-footer">
+
+                        <button
+                            type="button"
+                            class="z-like-button post-action like-button {% if post.liked %}liked{% endif %}"
+                            data-post-id="{{ post.id }}"
+                            onclick="toggleLike(this)"
+                        >
+
+                            {% if post.liked %}
+                                <span class="z-heart active">♥</span>
+                            {% else %}
+                                <span class="z-heart">♡</span>
+                            {% endif %}
+
+                            <span class="like-count">
+                                {{ post.likes|default(0) }}
+                            </span>
+
+                        </button>
+
+                    </div>
+
+                </article>
+
+                {% endfor %}
+
+            {% else %}
+
+                <div class="z-empty-profile">
+
+                    <div class="z-empty-icon">
+                        Z
+                    </div>
+
+                    <h2>
+                        Nenhuma publicação
+                    </h2>
+
+                    <p>
+                        {% if profile.id == current_user.id %}
+                            Compartilhe alguma coisa para começar.
+                        {% else %}
+                            Este perfil ainda não publicou nada.
+                        {% endif %}
+                    </p>
+
+                    {% if profile.id == current_user.id %}
+
+                    <a
+                        href="{{ url_for('create_post') }}"
+                        class="z-profile-button primary"
+                    >
+                        + Criar publicação
+                    </a>
+
+                    {% endif %}
+
+                </div>
+
+            {% endif %}
+
+        </section>
+
+
+        <!-- SOBRE -->
+        <section
+            id="about"
+            class="z-profile-about"
+        >
+
+            <div class="z-about-card">
+
+                <div class="z-about-title">
+                    Sobre {{ profile.name }}
+                </div>
+
+
+                {% if profile.birth_date %}
+
+                <div class="z-about-item">
+
+                    <span>
+                        Data de nascimento
+                    </span>
+
+                    <strong>
+                        {{ profile.birth_date }}
+                    </strong>
+
+                </div>
+
+                {% endif %}
+
+
+                <div class="z-about-item">
+
+                    <span>
+                        Entrou no Project Z
+                    </span>
+
+                    <strong>
+                        {{ profile.created_at }}
+                    </strong>
+
+                </div>
+
+            </div>
+
+        </section>
+
+    </section>
+
+</div>
+
+{% endblock %}

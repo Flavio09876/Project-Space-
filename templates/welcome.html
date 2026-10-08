@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}Project Z{% endblock %}
+
+{% block content %}
+
+<section class="welcome-page">
+
+    <div class="welcome-background">
+        <div class="welcome-glow glow-one"></div>
+        <div class="welcome-glow glow-two"></div>
+    </div>
+
+    <div class="welcome-content">
+
+        <div class="welcome-logo">
+            Z
+        </div>
+
+        <span class="eyebrow">
+            PROJECT Z
+        </span>
+
+        <h1>
+            Um espaço para<br>
+            <strong>conexões reais.</strong>
+        </h1>
+
+        <p>
+            Crie seu perfil, compartilhe momentos,
+            converse com pessoas e descubra novas comunidades.
+        </p>
+
+        <div class="welcome-actions">
+
+            <a href="{{ url_for('register') }}"
+               class="button button-primary">
+                Criar conta
+            </a>
+
+            <a href="{{ url_for('login') }}"
+               class="button button-secondary">
+                Entrar
+            </a>
+
+        </div>
+
+        <div class="welcome-features">
+
+            <div>
+                <span>◉</span>
+                <p>Seu perfil</p>
+            </div>
+
+            <div>
+                <span>◌</span>
+                <p>Conversas</p>
+            </div>
+
+            <div>
+                <span>◇</span>
+                <p>Comunidades</p>
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+{% endblock %}

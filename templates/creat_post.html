@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block title %}Nova publicação — Project Z{% endblock %}
+
+{% block content %}
+
+<div class="create-page">
+
+    <div class="page-heading">
+
+        <div>
+            <span class="eyebrow">PUBLICAÇÃO</span>
+            <h1>Criar post</h1>
+        </div>
+
+    </div>
+
+
+    <form
+        method="POST"
+        enctype="multipart/form-data"
+        class="create-post-card"
+    >
+
+        <div class="create-author">
+
+            {% if current_user.profile_photo %}
+
+                <img
+                    class="avatar avatar-medium"
+                    src="{{ url_for('avatar_file', filename=current_user.profile_photo) }}"
+                    alt=""
+                >
+
+            {% else %}
+
+                <div class="avatar avatar-medium avatar-placeholder">
+                    {{ current_user.name[0]|upper }}
+                </div>
+
+            {% endif %}
+
+            <div>
+
+                <strong>
+                    {{ current_user.name }}
+
+                    {% if current_user.verified %}
+                        <span class="verified-badge">✓</span>
+                    {% endif %}
+                </strong>
+
+                <span>@{{ current_user.username }}</span>
+
+            </div>
+
+        </div>
+
+
+        <textarea
+            name="content"
+            class="post-textarea"
+            maxlength="5000"
+            placeholder="O que você quer compartilhar?"
+            required
+        ></textarea>
+
+
+        <div class="upload-area">
+
+            <label for="post-image"
+                   class="upload-label">
+
+                <span class="upload-icon">＋</span>
+
+                <span>
+                    Adicionar imagem
+                </span>
+
+            </label>
+
+            <input
+                type="file"
+                id="post-image"
+                name="image"
+                accept="image/png,image/jpeg,image/webp"
+                onchange="previewPostImage(this)"
+            >
+
+        </div>
+
+
+        <div id="post-image-preview"
+             class="image-preview"
+             hidden>
+
+            <img src="" alt="Pré-visualização">
+
+            <button
+                type="button"
+                onclick="clearPostImage()">
+                Remover
+            </button>
+
+        </div>
+
+
+        <div class="create-post-footer">
+
+            <a href="{{ url_for('home') }}"
+               class="button button-secondary">
+                Cancelar
+            </a>
+
+            <button
+                type="submit"
+                class="button button-primary">
+                Publicar
+            </button>
+
+        </div>
+
+    </form>
+
+</div>
+
+{% endblock %}

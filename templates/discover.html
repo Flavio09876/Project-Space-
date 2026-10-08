@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block title %}Descobrir — Project Z{% endblock %}
+
+{% block content %}
+
+<div class="page-container">
+
+    <div class="page-heading">
+
+        <div>
+            <span class="eyebrow">EXPLORE</span>
+            <h1>Descobrir</h1>
+        </div>
+
+    </div>
+
+
+    <section class="discover-section">
+
+        <div class="section-title">
+            <div>
+                <h2>Pessoas</h2>
+                <p>Encontre novos perfis no Project Z.</p>
+            </div>
+        </div>
+
+
+        {% if users %}
+
+        <div class="user-grid">
+
+            {% for user in users %}
+
+            <article class="user-card">
+
+                <a href="{{ url_for('profile', username=user.username) }}"
+                   class="user-card-profile">
+
+                    {% if user.profile_photo %}
+
+                        <img
+                            class="avatar avatar-xlarge"
+                            src="{{ url_for('avatar_file', filename=user.profile_photo) }}"
+                            alt=""
+                        >
+
+                    {% else %}
+
+                        <div class="avatar avatar-xlarge avatar-placeholder">
+                            {{ user.name[0]|upper }}
+                        </div>
+
+                    {% endif %}
+
+                    <h3>
+                        {{ user.name }}
+
+                        {% if user.verified %}
+                            <span class="verified-badge">✓</span>
+                        {% endif %}
+                    </h3>
+
+                    <span>@{{ user.username }}</span>
+
+                    {% if user.bio %}
+                        <p>{{ user.bio }}</p>
+                    {% endif %}
+
+                </a>
+
+
+                {% if user.id != current_user.id %}
+
+                <button
+                    type="button"
+                    class="button button-secondary button-small follow-button"
+                    data-username="{{ user.username }}"
+                    data-following="{{ 'true' if user.following else 'false' }}"
+                    onclick="toggleFollow(this)">
+
+                    {% if user.following %}
+                        Seguindo
+                    {% else %}
+                        Seguir
+                    {% endif %}
+
+                </button>
+
+                {% endif %}
+
+            </article>
+
+            {% endfor %}
+
+        </div>
+
+        {% else %}
+
+        <div class="empty-state">
+
+            <div class="empty-icon">◎</div>
+
+            <h2>Nenhuma pessoa encontrada</h2>
+
+            <p>
+                Ainda não existem outros perfis para mostrar.
+            </p>
+
+        </div>
+
+        {% endif %}
+
+    </section>
+
+</div>
+
+{% endblock %}

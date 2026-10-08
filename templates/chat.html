@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block title %}Mensagens — Project Z{% endblock %}
+
+{% block content %}
+
+<div class="chat-page">
+
+    <div class="page-heading">
+
+        <div>
+            <span class="eyebrow">CONVERSAS</span>
+            <h1>Mensagens</h1>
+        </div>
+
+    </div>
+
+
+    <section class="conversation-list">
+
+        {% if conversations %}
+
+            {% for conversation in conversations %}
+
+            <a
+                href="{{ url_for('conversation', username=conversation.username) }}"
+                class="conversation-item"
+            >
+
+                {% if conversation.profile_photo %}
+
+                    <img
+                        class="avatar avatar-medium"
+                        src="{{ url_for('avatar_file', filename=conversation.profile_photo) }}"
+                        alt=""
+                    >
+
+                {% else %}
+
+                    <div class="avatar avatar-medium avatar-placeholder">
+                        {{ conversation.name[0]|upper }}
+                    </div>
+
+                {% endif %}
+
+
+                <div class="conversation-info">
+
+                    <div class="conversation-name">
+
+                        <strong>
+                            {{ conversation.name }}
+
+                            {% if conversation.verified %}
+                                <span class="verified-badge">✓</span>
+                            {% endif %}
+                        </strong>
+
+                        <time>
+                            {{ conversation.updated_at }}
+                        </time>
+
+                    </div>
+
+                    <span class="conversation-username">
+                        @{{ conversation.username }}
+                    </span>
+
+                    {% if conversation.last_message %}
+
+                        <p>
+                            {{ conversation.last_message }}
+                        </p>
+
+                    {% else %}
+
+                        <p class="muted">
+                            Nenhuma mensagem ainda.
+                        </p>
+
+                    {% endif %}
+
+                </div>
+
+            </a>
+
+            {% endfor %}
+
+        {% else %}
+
+            <div class="empty-state">
+
+                <div class="empty-icon">◌</div>
+
+                <h2>Nenhuma conversa</h2>
+
+                <p>
+                    Visite o perfil de alguém para iniciar uma conversa.
+                </p>
+
+                <a
+                    href="{{ url_for('discover') }}"
+                    class="button button-primary">
+                    Encontrar pessoas
+                </a>
+
+            </div>
+
+        {% endif %}
+
+    </section>
+
+</div>
+
+{% endblock %}

@@ -1,0 +1,306 @@
+{% extends "base.html" %}
+
+{% block title %}@{{ other_user.username }} — Mensagens{% endblock %}
+
+{% block content %}
+
+<div class="conversation-page">
+
+    <header class="conversation-header">
+
+        <a href="{{ url_for('chat') }}"
+           class="back-button">
+            ←
+        </a>
+
+
+        <a
+            href="{{ url_for('profile', username=other_user.username) }}"
+            class="conversation-profile"
+        >
+
+            {% if other_user.profile_photo %}
+
+                <img
+                    class="avatar avatar-medium"
+                    src="{{ url_for('avatar_file', filename=other_user.profile_photo) }}"
+                    alt=""
+                >
+
+            {% else %}
+
+                <div class="avatar avatar-medium avatar-placeholder">
+                    {{ other_user.name[0]|upper }}
+                </div>
+
+            {% endif %}
+
+
+            <div>
+
+                <strong>
+
+                    {{ other_user.name }}
+
+                    {% if other_user.verified %}
+                        <span class="verified-badge">✓</span>
+                    {% endif %}
+
+                </strong>
+
+                <span>
+                    @{{ other_user.username }}
+                </span>
+
+            </div>
+
+        </a>
+
+    </header>
+
+
+    <main
+        id="message-list"
+        class="message-list"
+        data-conversation-id="{{ conversation.id }}"
+    >
+
+        {% if messages %}
+
+            {% for message in messages %}
+
+            <div
+                class="message-row {% if message.sender_id == current_user.id %}mine{% else %}theirs{% endif %}"
+            >
+
+                <div class="message-bubble">
+                    {{ message.content }}
+                </div>
+
+                <time class="message-time">
+                    {{ message.created_at }}
+                </time>
+
+            </div>
+
+            {% endfor %}
+
+        {% else %}
+
+            <div class="conversation-empty">
+
+                <div class="empty-icon">◌</div>
+
+                <h2>Comece a conversa</h2>
+
+                <p>
+                    Envie uma mensagem para {{ other_user.name }}.
+                </p>
+
+            </div>
+
+        {% endif %}
+
+    </main>
+
+
+    <form
+        id="message-form"
+        class="message-form"
+        onsubmit="sendMessage(event)"
+    >
+
+        <input
+            type="text"
+            id="message-input"
+            name="message"
+            maxlength="2000"
+            autocomplete="off"
+            placeholder="Escreva uma mensagem..."
+            required
+        >
+
+        <button
+            type="submit"
+            class="send-message-button">
+            ↑
+        </button>
+
+    </form>
+
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+
+<script>
+
+document.addEventListener("DOMContentLoaded", function () {
+
+    const list = document.getElementById("message-list");
+
+    if (list) {
+        list.scrollTop = list.scrollHeight;
+    }
+
+});
+
+async function sendMessage(event) {
+
+    event.preventDefault();
+
+    const input = document.getElementById("message-input");
+    const list = document.getElementById("message-list");
+
+    const content = input.value.trim();
+
+    if (!content) {
+        return;
+    }
+
+    const conversationId = list.dataset.conversationId;
+
+    try {
+
+        const response = await fetch(
+            `/api/chat/${conversationId}/send`,
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    content: content
+                })
+            }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            alert(data.error || "Não foi possível enviar a mensagem.");
+            return;
+        }
+
+        input.value = "";
+
+        addMessageToChat(data.message);
+
+        list.scrollTop = list.scrollHeight;
+
+    } catch (error) {
+
+        console.error(error);
+
+        alert("Erro de conexão.");
+
+    }
+
+}
+
+
+function addMessageToChat(message) {
+
+    const list = document.getElementById("message-list");
+
+    const empty = list.querySelector(".conversation-empty");
+
+    if (empty) {
+        empty.remove();
+    }
+
+    const row = document.createElement("div");
+
+    row.className = "message-row mine";
+
+    row.innerHTML = `
+        <div class="message-bubble"></div>
+        <time class="message-time"></time>
+    `;
+
+    row.querySelector(".message-bubble").textContent =
+        message.content;
+
+    row.querySelector(".message-time").textContent =
+        message.created_at;
+
+    list.appendChild(row);
+
+}
+
+
+async function loadMessages() {
+
+    const list = document.getElementById("message-list");
+
+    if (!list) {
+        return;
+    }
+
+    const conversationId = list.dataset.conversationId;
+
+    try {
+
+        const response = await fetch(
+            `/api/chat/${conversationId}/messages`
+        );
+
+        if (!response.ok) {
+            return;
+        }
+
+        const data = await response.json();
+
+        const currentCount =
+            list.querySelectorAll(".message-row").length;
+
+        if (data.messages.length <= currentCount) {
+            return;
+        }
+
+        list.innerHTML = "";
+
+        data.messages.forEach(function (message) {
+
+            const row = document.createElement("div");
+
+            row.className =
+                "message-row " +
+                (message.sender_id == {{ current_user.id }}
+                    ? "mine"
+                    : "theirs");
+
+            const bubble = document.createElement("div");
+
+            bubble.className = "message-bubble";
+
+            bubble.textContent = message.content;
+
+            const time = document.createElement("time");
+
+            time.className = "message-time";
+
+            time.textContent = message.created_at;
+
+            row.appendChild(bubble);
+            row.appendChild(time);
+
+            list.appendChild(row);
+
+        });
+
+        list.scrollTop = list.scrollHeight;
+
+    } catch (error) {
+        console.error(error);
+    }
+
+}
+
+
+setInterval(loadMessages, 3000);
+
+</script>
+
+{% endblock %}

@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block title %}Criar conta — Project Z{% endblock %}
+
+{% block content %}
+
+<div class="auth-page">
+
+    <div class="auth-card register-card">
+
+        <div class="auth-logo">Z</div>
+
+        <h1>Criar sua conta</h1>
+
+        <p class="auth-subtitle">
+            Entre para o Project Z.
+        </p>
+
+        <form method="POST"
+              class="auth-form"
+              enctype="multipart/form-data">
+
+            <label>
+                Nome
+            </label>
+
+            <input
+                type="text"
+                name="name"
+                placeholder="Como você quer ser chamado?"
+                maxlength="80"
+                required
+            >
+
+            <label>
+                Nome de usuário
+            </label>
+
+            <div class="username-input">
+
+                <span>@</span>
+
+                <input
+                    type="text"
+                    name="username"
+                    placeholder="usuario"
+                    maxlength="30"
+                    pattern="[A-Za-z0-9_.]+"
+                    required
+                >
+
+            </div>
+
+            <label>
+                Data de nascimento
+            </label>
+
+            <input
+                type="date"
+                name="birth_date"
+                required
+            >
+
+            <label>
+                E-mail
+            </label>
+
+            <input
+                type="email"
+                name="email"
+                placeholder="seu@email.com"
+                autocomplete="email"
+                required
+            >
+
+            <label>
+                Senha
+            </label>
+
+            <div class="password-field">
+
+                <input
+                    type="password"
+                    name="password"
+                    id="register-password"
+                    placeholder="Crie uma senha"
+                    minlength="6"
+                    autocomplete="new-password"
+                    required
+                >
+
+                <button
+                    type="button"
+                    onclick="togglePassword('register-password', this)">
+                    Mostrar
+                </button>
+
+            </div>
+
+            <button type="submit"
+                    class="button button-primary button-full">
+                Criar conta
+            </button>
+
+        </form>
+
+        <div class="auth-footer">
+
+            <span>Já possui uma conta?</span>
+
+            <a href="{{ url_for('login') }}">
+                Entrar
+            </a>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

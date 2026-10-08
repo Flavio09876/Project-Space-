@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}Página não encontrada — Project Z{% endblock %}
+
+{% block content %}
+
+<div class="error-page">
+
+    <div class="error-code">
+        404
+    </div>
+
+    <h1>Página não encontrada</h1>
+
+    <p>
+        O endereço acessado não existe ou não está mais disponível.
+    </p>
+
+    <a href="{{ url_for('home') if current_user else url_for('index') }}"
+       class="button button-primary">
+        Voltar
+    </a>
+
+</div>
+
+{% endblock %}
