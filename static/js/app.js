@@ -76,7 +76,7 @@ async function toggleLike(button) {
             button.querySelector(".like-count");
 
         if (count) {
-            count.textContent = data.likes;
+            count.textContent = data.count;
         }
 
 
@@ -162,11 +162,11 @@ async function toggleFollow(button) {
         followerCounters.forEach(function (counter) {
 
             if (
-                typeof data.followers_count !==
+                typeof data.followers !==
                 "undefined"
             ) {
                 counter.textContent =
-                    data.followers_count;
+                    data.followers;
             }
 
         });

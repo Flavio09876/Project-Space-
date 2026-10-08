@@ -1578,23 +1578,21 @@ def profile(username):
     )
 
 
+    post_total = query_one(
+        "SELECT COUNT(*) AS total FROM posts WHERE author_id = %s",
+        (user["id"],),
+    )
+
     return render_template(
         "profile.html",
         user=user,
+        profile=user,
         posts=posts,
-        followers=follower_count(
-            user["id"]
-        ),
-        following=following_count(
-            user["id"]
-        ),
-        visits=visit_count(
-            user["id"]
-        ),
-        is_following=is_following(
-            current["id"],
-            user["id"]
-        ),
+        posts_count=post_total["total"],
+        followers_count=follower_count(user["id"]),
+        following_count=following_count(user["id"]),
+        visits_count=visit_count(user["id"]),
+        is_following=is_following(current["id"], user["id"]),
     )
 
 

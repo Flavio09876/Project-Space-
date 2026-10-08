@@ -109,11 +109,11 @@
                             <p>{{ post.content }}</p>
                         {% endif %}
 
-                        {% if post.image %}
+                        {% if post.media_filename %}
 
                             <img
                                 class="post-image"
-                                src="{{ post.image if post.image and post.image.startswith('http') else url_for('post_file', filename=post.image) }}"
+                                src="{{ post.media_filename if post.media_filename and post.media_filename.startswith('http') else url_for('post_file', filename=post.media_filename) }}"
                                 alt="Imagem da publicação"
                             >
 
@@ -133,7 +133,7 @@
                             <span>♡</span>
 
                             <span class="like-count">
-                                {{ post.likes }}
+                                {{ post.like_count }}
                             </span>
 
                         </button>
@@ -145,7 +145,7 @@
                             <span>◌</span>
 
                             <span>
-                                {{ post.comments }}
+                                {{ post.comment_count }}
                             </span>
 
                         </a>

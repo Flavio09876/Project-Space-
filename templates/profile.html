@@ -68,10 +68,10 @@
                         type="button"
                         class="z-profile-button secondary follow-button"
                         data-username="{{ profile.username }}"
-                        data-following="{{ 'true' if following else 'false' }}"
+                        data-following="{{ 'true' if is_following else 'false' }}"
                         onclick="toggleFollow(this)"
                     >
-                        {% if following %}
+                        {% if is_following %}
                             Seguindo
                         {% else %}
                             Seguir
@@ -159,7 +159,7 @@
 
             <div class="z-stat">
 
-                <strong>
+                <strong data-followers-count>
                     {{ followers_count|default(0) }}
                 </strong>
 
@@ -292,12 +292,12 @@
                     {% endif %}
 
 
-                    {% if post.image %}
+                    {% if post.media_filename %}
 
                     <div class="z-post-media">
 
                         <img
-                            src="{{ post.image if post.image and post.image.startswith('http') else url_for('post_file', filename=post.image) }}"
+                            src="{{ post.media_filename if post.media_filename and post.media_filename.startswith('http') else url_for('post_file', filename=post.media_filename) }}"
                             alt=""
                         >
 
@@ -322,7 +322,7 @@
                             {% endif %}
 
                             <span class="like-count">
-                                {{ post.likes|default(0) }}
+                                {{ post.like_count|default(0) }}
                             </span>
 
                         </button>
