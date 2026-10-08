@@ -1,0 +1,5 @@
+projectz.db
+__pycache__/
+*.pyc
+*.bak
+uploads/
