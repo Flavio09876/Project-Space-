@@ -2238,25 +2238,28 @@ def conversation(username):
         """
         SELECT
             m.*,
-
             u.name,
             u.username,
             u.profile_photo,
             u.verified
-
         FROM messages m
-
-        JOIN users u
-          ON u.id = m.sender_id
-
-        WHERE m.conversation_id = %s
-
-        ORDER BY m.id ASC
-
+        JOIN users u ON u.id = m.sender_id
+        WHERE m.conversation_id IN (
+            SELECT mine.conversation_id
+            FROM conversation_members mine
+            JOIN conversation_members other_member
+              ON other_member.conversation_id = mine.conversation_id
+            WHERE mine.user_id = %s
+              AND other_member.user_id = %s
+            GROUP BY mine.conversation_id
+            HAVING COUNT(*) = 2
+        )
+        ORDER BY m.id DESC
         LIMIT 200
         """,
-        (conversation_id,),
+        (user["id"], target["id"]),
     )
+    messages = list(reversed(messages))
 
 
     return render_template(
@@ -2386,49 +2389,38 @@ def send_message(conversation_id):
     "/api/chat/<int:conversation_id>/messages"
 )
 @login_required
-def api_messages(
-    conversation_id,
-):
-
+def api_messages(conversation_id):
     user = get_current_user()
-
 
     member = query_one(
         """
         SELECT 1
-
         FROM conversation_members
-
-        WHERE conversation_id = %s
-
-          AND user_id = %s
+        WHERE conversation_id = %s AND user_id = %s
         """,
-        (
-            conversation_id,
-            user["id"],
-        ),
+        (conversation_id, user["id"]),
     )
-
 
     if not member:
+        return jsonify({"ok": False}), 403
 
-        return jsonify(
-            {
-                "ok": False,
-            }
-        ), 403
-
-
-    after = request.args.get(
-        "after",
-        type=int,
+    # Descobre o outro participante da conversa aberta.
+    target = query_one(
+        """
+        SELECT user_id
+        FROM conversation_members
+        WHERE conversation_id = %s AND user_id != %s
+        LIMIT 1
+        """,
+        (conversation_id, user["id"]),
     )
 
+    if not target:
+        return jsonify({"ok": True, "messages": []})
 
+    after = request.args.get("after", default=0, type=int)
     if after is None:
-
         after = 0
-
 
     messages = query_all(
         """
@@ -2437,42 +2429,39 @@ def api_messages(
             m.sender_id,
             m.content,
             m.created_at,
-
             u.username,
             u.name,
             u.profile_photo,
             u.verified
-
         FROM messages m
-
-        JOIN users u
-          ON u.id = m.sender_id
-
-        WHERE m.conversation_id = %s
-
-          AND m.id > %s
-
+        JOIN users u ON u.id = m.sender_id
+        WHERE m.id > %s
+          AND m.conversation_id IN (
+              SELECT mine.conversation_id
+              FROM conversation_members mine
+              JOIN conversation_members other_member
+                ON other_member.conversation_id = mine.conversation_id
+              WHERE mine.user_id = %s
+                AND other_member.user_id = %s
+              GROUP BY mine.conversation_id
+              HAVING COUNT(*) = 2
+          )
         ORDER BY m.id ASC
-
         LIMIT 100
         """,
-        (
-            conversation_id,
-            after,
-        ),
+        (after, user["id"], target["user_id"]),
     )
 
-
-    return jsonify(
-        {
-            "ok": True,
-
-            "messages": [
-                dict(message)
-                for message in messages
-            ],
-        }
-    )
+    return jsonify({
+        "ok": True,
+        "messages": [
+            {
+                **dict(message),
+                "created_at": str(message["created_at"]),
+            }
+            for message in messages
+        ],
+    })
 
 
 # ============================================================
