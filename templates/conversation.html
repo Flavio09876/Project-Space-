@@ -3,336 +3,726 @@
 {% block title %}@{{ other_user.username }} — Mensagens{% endblock %}
 
 {% block content %}
+<style>
+.conversation-page {
+    --chat-bg: #080808;
+    --chat-panel: #101010;
+    --chat-border: #292929;
+    --chat-accent: #8b0000;
+    --chat-text: #f2f2f2;
+    --chat-muted: #929292;
+    width: 100%;
+    max-width: 900px;
+    height: calc(100dvh - 175px);
+    min-height: 340px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    color: var(--chat-text);
+    background: var(--chat-bg);
+    border: 1px solid var(--chat-border);
+    border-radius: 16px;
+    box-sizing: border-box;
+}
+
+.conversation-page *,
+.conversation-page *::before,
+.conversation-page *::after {
+    box-sizing: border-box;
+}
+
+.conversation-header {
+    flex: 0 0 auto;
+    min-height: 76px;
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    padding: 12px 16px;
+    background: #101010;
+    border-bottom: 1px solid var(--chat-border);
+}
+
+.conversation-page .back-button {
+    color: #ddd;
+    text-decoration: none;
+    font-size: 28px;
+    line-height: 1;
+    padding: 6px;
+}
+
+.conversation-page .conversation-profile {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    color: inherit;
+    text-decoration: none;
+}
+
+.conversation-page .conversation-profile > div:last-child {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.conversation-page .avatar {
+    flex: 0 0 auto;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    object-fit: cover;
+    background: #252525;
+    border: 1px solid #353535;
+}
+
+.conversation-page .avatar-placeholder {
+    display: grid;
+    place-items: center;
+    color: #fff;
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.conversation-page .conversation-name {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 5px;
+    font-size: 15px;
+    font-weight: 700;
+    overflow-wrap: anywhere;
+}
+
+.conversation-page .conversation-handle {
+    color: var(--chat-muted);
+    font-size: 12px;
+    overflow-wrap: anywhere;
+}
+
+.conversation-page .verified-badge {
+    display: inline-grid;
+    place-items: center;
+    width: 17px;
+    height: 17px;
+    border-radius: 50%;
+    color: white;
+    background: #2789ed;
+    font-size: 11px;
+    font-weight: 800;
+    flex: 0 0 auto;
+}
+
+.conversation-page .message-list {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    display: flex;
+    flex-direction: column;
+    gap: 19px;
+    padding: 18px 14px 24px;
+    scroll-behavior: smooth;
+    scrollbar-width: thin;
+    scrollbar-color: #393939 transparent;
+}
+
+.conversation-page .message-row {
+    width: 100%;
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+}
+
+.conversation-page .message-row.mine {
+    justify-content: flex-end;
+}
+
+.conversation-page .message-row.theirs {
+    justify-content: flex-start;
+}
+
+.conversation-page .message-avatar-link {
+    display: block;
+    flex: 0 0 32px;
+    width: 32px;
+    height: 32px;
+    text-decoration: none;
+}
+
+.conversation-page .message-avatar {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    color: white;
+    background: #292929;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.conversation-page .message-content {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    min-width: 0;
+    max-width: min(78%, 560px);
+}
+
+.conversation-page .mine .message-content {
+    align-items: flex-end;
+}
+
+.conversation-page .message-author {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 5px;
+    padding: 0 5px;
+    color: #c8c8c8;
+    font-size: 12px;
+    text-decoration: none;
+    overflow-wrap: anywhere;
+}
+
+.conversation-page .message-author strong {
+    font-weight: 700;
+}
+
+.conversation-page .message-author .handle {
+    color: #777;
+    font-weight: 400;
+}
+
+.conversation-page .message-bubble {
+    width: fit-content;
+    max-width: 100%;
+    padding: 10px 13px;
+    border: 1px solid #303030;
+    border-radius: 16px 16px 16px 4px;
+    background: #191919;
+    color: #f3f3f3;
+    font-size: 15px;
+    line-height: 1.45;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+.conversation-page .mine .message-bubble {
+    border-color: #6e1010;
+    border-radius: 16px 16px 4px 16px;
+    background: #650d0d;
+    color: #fff;
+}
+
+.conversation-page .message-time {
+    padding: 0 5px;
+    color: #777;
+    font-size: 10px;
+    line-height: 1.4;
+}
+
+.conversation-page .conversation-empty {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 28px 16px;
+    color: var(--chat-muted);
+}
+
+.conversation-page .empty-icon {
+    display: grid;
+    place-items: center;
+    width: 55px;
+    height: 55px;
+    border: 1px solid #353535;
+    border-radius: 50%;
+    margin-bottom: 12px;
+    color: #c7c7c7;
+    font-size: 27px;
+}
+
+.conversation-page .conversation-empty h2 {
+    margin: 0 0 7px;
+    color: #eee;
+    font-size: 17px;
+}
+
+.conversation-page .conversation-empty p {
+    margin: 0;
+    font-size: 13px;
+}
+
+.conversation-page .message-form {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 12px;
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+    border-top: 1px solid var(--chat-border);
+    background: #101010;
+}
+
+.conversation-page #message-input {
+    flex: 1;
+    width: 0;
+    min-width: 0;
+    height: 46px;
+    padding: 0 15px;
+    border: 1px solid #353535;
+    border-radius: 24px;
+    outline: none;
+    background: #191919;
+    color: #fff;
+    font: inherit;
+    font-size: 14px;
+}
+
+.conversation-page #message-input::placeholder {
+    color: #858585;
+}
+
+.conversation-page #message-input:focus {
+    border-color: #8b3030;
+    box-shadow: 0 0 0 2px #8b000022;
+}
+
+.conversation-page .send-message-button {
+    flex: 0 0 46px;
+    width: 46px;
+    height: 46px;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: #8b0000;
+    color: #fff;
+    font-size: 24px;
+    cursor: pointer;
+    transition: background .15s, opacity .15s;
+}
+
+.conversation-page .send-message-button:active {
+    background: #ad1010;
+}
+
+.conversation-page .send-message-button:disabled {
+    opacity: .5;
+    cursor: wait;
+}
+
+.conversation-page #chat-notice {
+    flex: 0 0 auto;
+    padding: 7px 14px;
+    color: #ff9999;
+    background: #180b0b;
+    font-size: 12px;
+}
+
+@media (max-width: 600px) {
+    .conversation-page {
+        width: 100%;
+        height: calc(100dvh - 175px);
+        min-height: 300px;
+        border-right: 0;
+        border-left: 0;
+        border-radius: 0;
+    }
+
+    .conversation-header {
+        min-height: 68px;
+        padding: 10px 12px;
+    }
+
+    .conversation-page .message-list {
+        padding: 16px 10px 20px;
+        gap: 17px;
+    }
+
+    .conversation-page .message-content {
+        max-width: 82%;
+    }
+
+    .conversation-page .message-form {
+        padding: 10px;
+        padding-bottom: max(10px, env(safe-area-inset-bottom));
+    }
+}
+</style>
 
 <div class="conversation-page">
-
     <header class="conversation-header">
+        <a href="{{ url_for('chat') }}" class="back-button" aria-label="Voltar">←</a>
 
-        <a href="{{ url_for('chat') }}"
-           class="back-button">
-            ←
-        </a>
-
-
-        <a
-            href="{{ url_for('profile', username=other_user.username) }}"
-            class="conversation-profile"
-        >
-
+        <a href="{{ url_for('profile', username=other_user.username) }}"
+           class="conversation-profile">
             {% if other_user.profile_photo %}
-
                 <img
-                    class="avatar avatar-medium"
-                    src="{{ other_user.profile_photo if other_user.profile_photo and other_user.profile_photo.startswith('http') else url_for('avatar_file', filename=other_user.profile_photo) }}"
+                    class="avatar"
+                    src="{{ other_user.profile_photo if other_user.profile_photo.startswith('http') else url_for('avatar_file', filename=other_user.profile_photo) }}"
                     alt=""
                 >
-
             {% else %}
-
-                <div class="avatar avatar-medium avatar-placeholder">
-                    {{ other_user.name[0]|upper }}
+                <div class="avatar avatar-placeholder">
+                    {{ (other_user.name or other_user.username or '?')[0]|upper }}
                 </div>
-
             {% endif %}
 
-
             <div>
-
-                <strong>
-
-                    {{ other_user.name }}
-
+                <div class="conversation-name">
+                    {{ other_user.name or other_user.username }}
                     {% if other_user.verified %}
-                        <span class="verified-badge">✓</span>
+                        <span class="verified-badge" title="Verificado" aria-label="Verificado">✓</span>
                     {% endif %}
-
-                </strong>
-
-                <span>
-                    @{{ other_user.username }}
-                </span>
-
+                </div>
+                <span class="conversation-handle">@{{ other_user.username }}</span>
             </div>
-
         </a>
-
     </header>
 
+    <main id="message-list"
+          class="message-list"
+          data-conversation-id="{{ conversation.id }}"
+          data-current-user-id="{{ current_user.id }}"
+          aria-live="polite">
 
-    <main
-        id="message-list"
-        class="message-list"
-        data-conversation-id="{{ conversation.id }}"
-    >
+        {% for message in messages %}
+            <div class="message-row {% if message.sender_id == current_user.id %}mine{% else %}theirs{% endif %}"
+                 data-message-id="{{ message.id }}">
 
-        {% if messages %}
+                {% if message.sender_id != current_user.id %}
+                    <a class="message-avatar-link"
+                       href="{{ url_for('profile', username=message.username) }}"
+                       tabindex="-1"
+                       aria-hidden="true">
+                        {% if message.profile_photo %}
+                            <img class="message-avatar"
+                                 src="{{ message.profile_photo if message.profile_photo.startswith('http') else url_for('avatar_file', filename=message.profile_photo) }}"
+                                 alt="">
+                        {% else %}
+                            <span class="message-avatar">{{ (message.name or message.username or '?')[0]|upper }}</span>
+                        {% endif %}
+                    </a>
+                {% endif %}
 
-            {% for message in messages %}
+                <div class="message-content">
+                    <a class="message-author"
+                       href="{{ url_for('profile', username=message.username) }}">
+                        <strong>{{ message.name or message.username }}</strong>
+                        <span class="handle">@{{ message.username }}</span>
+                        {% if message.verified %}
+                            <span class="verified-badge" title="Verificado" aria-label="Verificado">✓</span>
+                        {% endif %}
+                    </a>
 
-            <div
-                class="message-row {% if message.sender_id == current_user.id %}mine{% else %}theirs{% endif %}"
-            >
+                    <div class="message-bubble">{{ message.content }}</div>
 
-                <div class="message-bubble">
-                    {{ message.content }}
+                    <time class="message-time"
+                          datetime="{{ message.created_at.isoformat() if message.created_at else '' }}">
+                        {{ message.created_at.strftime('%H:%M') if message.created_at and message.created_at.strftime is defined else '' }}
+                    </time>
                 </div>
 
-                <time class="message-time">
-                    {{ message.created_at }}
-                </time>
-
+                {% if message.sender_id == current_user.id %}
+                    <a class="message-avatar-link"
+                       href="{{ url_for('profile', username=current_user.username) }}"
+                       tabindex="-1"
+                       aria-hidden="true">
+                        {% if current_user.profile_photo %}
+                            <img class="message-avatar"
+                                 src="{{ current_user.profile_photo if current_user.profile_photo.startswith('http') else url_for('avatar_file', filename=current_user.profile_photo) }}"
+                                 alt="">
+                        {% else %}
+                            <span class="message-avatar">{{ (current_user.name or current_user.username or '?')[0]|upper }}</span>
+                        {% endif %}
+                    </a>
+                {% endif %}
             </div>
-
-            {% endfor %}
-
         {% else %}
-
             <div class="conversation-empty">
-
                 <div class="empty-icon">◌</div>
-
                 <h2>Comece a conversa</h2>
-
-                <p>
-                    Envie uma mensagem para {{ other_user.name }}.
-                </p>
-
+                <p>Envie uma mensagem para {{ other_user.name }}.</p>
             </div>
-
-        {% endif %}
-
+        {% endfor %}
     </main>
 
+    <div id="chat-notice" role="status" hidden></div>
 
-    <form
-        id="message-form"
-        class="message-form"
-        onsubmit="sendMessage(event)"
-    >
+    <form id="message-form" class="message-form" onsubmit="sendMessage(event)">
+        <input type="text"
+               id="message-input"
+               name="message"
+               maxlength="5000"
+               autocomplete="off"
+               placeholder="Escreva uma mensagem..."
+               aria-label="Escreva uma mensagem"
+               required>
 
-        <input
-            type="text"
-            id="message-input"
-            name="message"
-            maxlength="2000"
-            autocomplete="off"
-            placeholder="Escreva uma mensagem..."
-            required
-        >
-
-        <button
-            type="submit"
-            class="send-message-button">
-            ↑
-        </button>
-
+        <button type="submit" class="send-message-button" aria-label="Enviar mensagem">↑</button>
     </form>
-
 </div>
-
 {% endblock %}
 
 {% block scripts %}
-
 <script>
-
-document.addEventListener("DOMContentLoaded", function () {
+(function () {
+    "use strict";
 
     const list = document.getElementById("message-list");
-
-    if (list) {
-        list.scrollTop = list.scrollHeight;
-    }
-
-});
-
-async function sendMessage(event) {
-
-    event.preventDefault();
-
-    const input = document.getElementById("message-input");
-    const list = document.getElementById("message-list");
-
-    const content = input.value.trim();
-
-    if (!content) {
-        showChatNotice("Digite uma mensagem antes de enviar.");
-        input.focus();
-        return;
-    }
-
-    const conversationId = list.dataset.conversationId;
-    const button = document.querySelector(".send-message-button");
-
-    clearChatNotice();
-
-    if (button) button.disabled = true;
-
-    try {
-
-        const response = await fetch(
-            `/api/chat/${conversationId}/send`,
-            {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    content: content
-                })
-            }
-        );
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            showChatNotice(data.error || "Não foi possível enviar a mensagem.");
-            return;
-        }
-
-        if (!data.message || typeof data.message.content !== "string") {
-            showChatNotice("O servidor respondeu, mas não retornou a mensagem corretamente.");
-            return;
-        }
-
-        input.value = "";
-        addMessageToChat(data.message);
-        list.scrollTop = list.scrollHeight;
-
-    } catch (error) {
-        console.error(error);
-        showChatNotice("Falha de conexão. Verifique a internet e tente novamente.");
-    } finally {
-        if (button) button.disabled = false;
-    }
-
-}
-
-
-function showChatNotice(message) {
-    let notice = document.getElementById("chat-notice");
     const form = document.getElementById("message-form");
-
-    if (!notice && form) {
-        notice = document.createElement("div");
-        notice.id = "chat-notice";
-        notice.setAttribute("role", "status");
-        notice.style.cssText =
-            "color:#ff8b8b;font-size:14px;padding:8px 4px;";
-        form.insertAdjacentElement("beforebegin", notice);
-    }
-
-    if (notice) notice.textContent = message;
-}
-
-
-function clearChatNotice() {
+    const input = document.getElementById("message-input");
+    const button = form.querySelector(".send-message-button");
     const notice = document.getElementById("chat-notice");
-    if (notice) notice.textContent = "";
-}
 
-
-function addMessageToChat(message) {
-
-    const list = document.getElementById("message-list");
-
-    const empty = list.querySelector(".conversation-empty");
-
-    if (empty) {
-        empty.remove();
-    }
-
-    const row = document.createElement("div");
-
-    row.className = "message-row mine";
-
-    row.innerHTML = `
-        <div class="message-bubble"></div>
-        <time class="message-time"></time>
-    `;
-
-    row.querySelector(".message-bubble").textContent =
-        message.content;
-
-    row.querySelector(".message-time").textContent =
-        message.created_at;
-
-    list.appendChild(row);
-
-}
-
-
-async function loadMessages() {
-
-    const list = document.getElementById("message-list");
-
-    if (!list) {
-        return;
-    }
+    if (!list || !form || !input || !button) return;
 
     const conversationId = list.dataset.conversationId;
+    const currentUserId = Number(list.dataset.currentUserId);
+    let lastMessageId = Math.max(
+        0,
+        ...Array.from(list.querySelectorAll("[data-message-id]"))
+            .map(row => Number(row.dataset.messageId) || 0)
+    );
+    let loading = false;
 
-    try {
-
-        const response = await fetch(
-            `/api/chat/${conversationId}/messages`
-        );
-
-        if (!response.ok) {
-            return;
-        }
-
-        const data = await response.json();
-
-        const currentCount =
-            list.querySelectorAll(".message-row").length;
-
-        if (data.messages.length <= currentCount) {
-            return;
-        }
-
-        list.innerHTML = "";
-
-        data.messages.forEach(function (message) {
-
-            const row = document.createElement("div");
-
-            row.className =
-                "message-row " +
-                (message.sender_id == {{ current_user.id }}
-                    ? "mine"
-                    : "theirs");
-
-            const bubble = document.createElement("div");
-
-            bubble.className = "message-bubble";
-
-            bubble.textContent = message.content;
-
-            const time = document.createElement("time");
-
-            time.className = "message-time";
-
-            time.textContent = message.created_at;
-
-            row.appendChild(bubble);
-            row.appendChild(time);
-
-            list.appendChild(row);
-
-        });
-
-        list.scrollTop = list.scrollHeight;
-
-    } catch (error) {
-        console.error(error);
+    function showNotice(message) {
+        notice.textContent = message;
+        notice.hidden = !message;
     }
 
-}
+    function formatTime(value) {
+        if (!value) return "";
 
+        const normalized = String(value).replace(" ", "T");
+        const date = new Date(normalized);
 
-setInterval(loadMessages, 3000);
+        if (Number.isNaN(date.getTime())) {
+            const match = String(value).match(/\b(\d{2}:\d{2})/);
+            return match ? match[1] : "";
+        }
 
+        return date.toLocaleTimeString("pt-BR", {
+            hour: "2-digit",
+            minute: "2-digit"
+        });
+    }
+
+    function avatarUrl(photo) {
+        if (!photo) return "";
+        if (/^https?:\/\//i.test(photo)) return photo;
+
+        return "/uploads/avatars/" +
+            photo.split("/").map(encodeURIComponent).join("/");
+    }
+
+    function makeAvatar(user, linked) {
+        const element = document.createElement(linked ? "a" : "span");
+        element.className = linked
+            ? "message-avatar-link"
+            : "message-avatar";
+
+        if (linked && user.username) {
+            element.href = "/u/" + encodeURIComponent(user.username);
+            element.tabIndex = -1;
+            element.setAttribute("aria-hidden", "true");
+        }
+
+        const photo = avatarUrl(user.profile_photo);
+
+        if (photo) {
+            const img = document.createElement("img");
+            img.className = "message-avatar";
+            img.src = photo;
+            img.alt = "";
+            img.loading = "lazy";
+            element.appendChild(img);
+        } else {
+            const fallback = document.createElement("span");
+            fallback.className = "message-avatar";
+            fallback.textContent =
+                (user.name || user.username || "?").trim().charAt(0).toUpperCase();
+            element.appendChild(fallback);
+        }
+
+        return element;
+    }
+
+    function makeMessage(message) {
+        const mine = Number(message.sender_id) === currentUserId;
+        const row = document.createElement("div");
+
+        row.className = "message-row " + (mine ? "mine" : "theirs");
+
+        if (message.id != null) {
+            row.dataset.messageId = String(message.id);
+        }
+
+        const user = mine
+            ? {
+                name: {{ (current_user.name or current_user.username)|tojson }},
+                username: {{ current_user.username|tojson }},
+                profile_photo: {{ (current_user.profile_photo or '')|tojson }},
+                verified: {{ (current_user.verified or 0)|tojson }}
+            }
+            : {
+                name: message.name || message.username || "Usuário",
+                username: message.username || "",
+                profile_photo: message.profile_photo || "",
+                verified: message.verified || 0
+            };
+
+        if (!mine) row.appendChild(makeAvatar(user, true));
+
+        const content = document.createElement("div");
+        content.className = "message-content";
+
+        const author = document.createElement("a");
+        author.className = "message-author";
+
+        if (user.username) {
+            author.href = "/u/" + encodeURIComponent(user.username);
+        }
+
+        const name = document.createElement("strong");
+        name.textContent = user.name || user.username || "Usuário";
+        author.appendChild(name);
+
+        const handle = document.createElement("span");
+        handle.className = "handle";
+        handle.textContent = "@" + (user.username || "usuario");
+        author.appendChild(handle);
+
+        if (Number(user.verified) === 1) {
+            const badge = document.createElement("span");
+            badge.className = "verified-badge";
+            badge.title = "Verificado";
+            badge.setAttribute("aria-label", "Verificado");
+            badge.textContent = "✓";
+            author.appendChild(badge);
+        }
+
+        const bubble = document.createElement("div");
+        bubble.className = "message-bubble";
+        bubble.textContent = message.content || "";
+
+        const time = document.createElement("time");
+        time.className = "message-time";
+        time.textContent = formatTime(message.created_at);
+
+        content.append(author, bubble, time);
+        row.appendChild(content);
+
+        if (mine) row.appendChild(makeAvatar(user, true));
+
+        return row;
+    }
+
+    function appendMessage(message) {
+        const empty = list.querySelector(".conversation-empty");
+        if (empty) empty.remove();
+
+        const id = Number(message.id) || 0;
+
+        if (id && list.querySelector('[data-message-id="' + id + '"]')) {
+            return;
+        }
+
+        list.appendChild(makeMessage(message));
+        if (id > lastMessageId) lastMessageId = id;
+        list.scrollTop = list.scrollHeight;
+    }
+
+    async function loadMessages() {
+        if (loading) return;
+        loading = true;
+
+        try {
+            const response = await fetch(
+                "/api/chat/" + encodeURIComponent(conversationId) +
+                "/messages?after=" + lastMessageId,
+                { headers: { "Accept": "application/json" } }
+            );
+
+            if (!response.ok) return;
+
+            const data = await response.json();
+
+            if (!Array.isArray(data.messages)) return;
+
+            data.messages.forEach(appendMessage);
+        } catch (error) {
+            console.error("Erro ao atualizar mensagens:", error);
+        } finally {
+            loading = false;
+        }
+    }
+
+    async function sendMessage(event) {
+        event.preventDefault();
+
+        const content = input.value.trim();
+
+        if (!content) {
+            showNotice("Digite uma mensagem antes de enviar.");
+            input.focus();
+            return;
+        }
+
+        showNotice("");
+        button.disabled = true;
+
+        try {
+            const response = await fetch(
+                "/api/chat/" + encodeURIComponent(conversationId) + "/send",
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Accept": "application/json"
+                    },
+                    body: JSON.stringify({ content: content })
+                }
+            );
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                showNotice(data.error || "Não foi possível enviar a mensagem.");
+                return;
+            }
+
+            if (!data.message || typeof data.message.content !== "string") {
+                showNotice("O servidor não retornou a mensagem corretamente.");
+                return;
+            }
+
+            input.value = "";
+            appendMessage(data.message);
+            input.focus();
+        } catch (error) {
+            console.error("Erro ao enviar mensagem:", error);
+            showNotice("Falha de conexão. Verifique a internet e tente novamente.");
+        } finally {
+            button.disabled = false;
+        }
+    }
+
+    form.addEventListener("submit", sendMessage);
+
+    list.scrollTop = list.scrollHeight;
+
+    window.setInterval(loadMessages, 3000);
+})();
 </script>
-
 {% endblock %}
