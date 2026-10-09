@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 
-    <title>{% block title %}Project Z{% endblock %}</title>
+    <title>{% block title %}K{% endblock %}</title>
 
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
@@ -17,8 +17,8 @@
 
         <a href="{{ url_for('home') if current_user else url_for('welcome') }}"
            class="brand">
-            <span class="brand-mark">Z</span>
-            <span class="brand-name">Project Z</span>
+            <span class="brand-mark">K</span>
+            <span class="brand-name">K</span>
         </a>
 
         {% if current_user %}
@@ -133,7 +133,7 @@
         </a>
 
         <a href="{{ url_for('create_post') }}"
-           class="create-button">
+           class="mobile-create">
             <span>＋</span>
         </a>
 

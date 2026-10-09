@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Início — Project Z{% endblock %}
+{% block title %}Início — K{% endblock %}
 
 {% block content %}
 
@@ -10,7 +10,7 @@
 
         <div class="page-heading">
             <div>
-                <span class="eyebrow">PROJECT Z</span>
+                <span class="eyebrow">K</span>
                 <h1>Início</h1>
             </div>
 
@@ -103,7 +103,12 @@
                     </div>
 
 
-                    <div class="post-content">
+                    <div class="post-content"
+                         role="link"
+                         tabindex="0"
+                         style="cursor:pointer"
+                         onclick="window.location.href='{{ url_for('post_detail', post_id=post.id) }}'"
+                         onkeydown="if(event.key==='Enter'){window.location.href='{{ url_for('post_detail', post_id=post.id) }}'}">
 
                         {% if post.content %}
                             <p>{{ post.content }}</p>
@@ -139,7 +144,7 @@
                         </button>
 
                         <a
-                            href="{{ url_for('profile', username=post.username) }}"
+                            href="{{ url_for('post_detail', post_id=post.id) }}"
                             class="post-action">
 
                             <span>◌</span>
@@ -162,7 +167,7 @@
 
             <div class="empty-state">
 
-                <div class="empty-icon">Z</div>
+                <div class="empty-icon">K</div>
 
                 <h2>Seu feed está vazio</h2>
 
@@ -230,7 +235,7 @@
         <div class="side-card">
 
             <div class="side-card-header">
-                <h2>Project Z</h2>
+                <h2>K</h2>
             </div>
 
             <p class="side-description">
@@ -240,7 +245,7 @@
 
             <a href="{{ url_for('community', community_id=1) }}"
                class="side-link">
-                Comunidade Project Z →
+                Comunidade K →
             </a>
 
         </div>

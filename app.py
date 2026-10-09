@@ -1240,6 +1240,56 @@ def create_post():
     )
 
 
+
+# ============================================================
+# DETALHES DA PUBLICAÇÃO E COMENTÁRIOS
+# ============================================================
+@app.route("/post/<int:post_id>", methods=["GET", "POST"])
+@login_required
+def post_detail(post_id):
+    user = get_current_user()
+
+    post = query_one("""
+        SELECT p.*, u.name, u.username, u.profile_photo, u.verified,
+               (SELECT COUNT(*) FROM post_likes pl
+                WHERE pl.post_id = p.id) AS like_count,
+               EXISTS (
+                   SELECT 1 FROM post_likes pl2
+                   WHERE pl2.post_id = p.id AND pl2.user_id = %s
+               ) AS liked
+        FROM posts p
+        JOIN users u ON u.id = p.author_id
+        WHERE p.id = %s
+    """, (user["id"], post_id))
+
+    if not post:
+        return "Publicação não encontrada.", 404
+
+    if request.method == "POST":
+        content = request.form.get("content", "").strip()
+        if content:
+            execute(
+                "INSERT INTO comments (post_id, user_id, content) VALUES (%s, %s, %s)",
+                (post_id, user["id"], content)
+            )
+        return redirect(url_for("post_detail", post_id=post_id))
+
+    comments = query_all("""
+        SELECT c.*, u.name, u.username, u.profile_photo, u.verified
+        FROM comments c
+        JOIN users u ON u.id = c.user_id
+        WHERE c.post_id = %s
+        ORDER BY c.id ASC
+    """, (post_id,))
+
+    return render_template(
+        "post_detail.html",
+        user=user,
+        post=post,
+        comments=comments
+    )
+
+
 # ============================================================
 # LIKE
 # ============================================================
