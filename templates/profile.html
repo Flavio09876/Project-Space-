@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_components.html" import avatar, post_card with context %}
 
 {% set profile = profile if profile is defined else user %}
 
@@ -207,108 +208,7 @@
 
                 {% for post in posts %}
 
-                <article class="z-post">
-
-                    <div class="z-post-top">
-
-                        <div class="z-post-user">
-
-                            {% if profile.profile_photo %}
-
-                                <img
-                                    src="{{ profile.profile_photo if profile.profile_photo and profile.profile_photo.startswith('http') else url_for('avatar_file', filename=profile.profile_photo) }}"
-                                    class="z-post-avatar"
-                                    alt=""
-                                >
-
-                            {% else %}
-
-                                <div class="z-post-avatar z-avatar-placeholder">
-                                    {{ profile.name[0]|upper }}
-                                </div>
-
-                            {% endif %}
-
-
-                            <div class="z-post-user-info">
-
-                                <div class="z-post-name">
-
-                                    {{ profile.name }}
-
-                                    {% if profile.verified %}
-
-                                        <span class="z-verified z-verified-small">
-                                            ✓
-                                        </span>
-
-                                    {% endif %}
-
-                                </div>
-
-                                <div class="z-post-handle">
-                                    @{{ profile.username }}
-                                </div>
-
-                            </div>
-
-                        </div>
-
-
-                        <time class="z-post-date">
-                            {{ post.created_at }}
-                        </time>
-
-                    </div>
-
-
-                    {% if post.content %}
-
-                    <div class="z-post-text">
-                        {{ post.content }}
-                    </div>
-
-                    {% endif %}
-
-
-                    {% if post.media_filename %}
-
-                    <div class="z-post-media">
-
-                        <img
-                            src="{{ post.media_filename if post.media_filename and post.media_filename.startswith('http') else url_for('post_file', filename=post.media_filename) }}"
-                            alt=""
-                        >
-
-                    </div>
-
-                    {% endif %}
-
-
-                    <div class="z-post-footer">
-
-                        <button
-                            type="button"
-                            class="z-like-button post-action like-button {% if post.liked %}liked{% endif %}"
-                            data-post-id="{{ post.id }}"
-                            onclick="toggleLike(this)"
-                        >
-
-                            {% if post.liked %}
-                                <span class="z-heart active">♥</span>
-                            {% else %}
-                                <span class="z-heart">♡</span>
-                            {% endif %}
-
-                            <span class="like-count">
-                                {{ post.like_count|default(0) }}
-                            </span>
-
-                        </button>
-
-                    </div>
-
-                </article>
+                {{ post_card(post, profile.name, profile.username, profile.profile_photo, profile.verified) }}
 
                 {% endfor %}
 
@@ -387,7 +287,7 @@
                     </span>
 
                     <strong>
-                        {{ profile.created_at }}
+                        {{ profile.created_at|pz_time("full") }}
                     </strong>
 
                 </div>

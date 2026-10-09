@@ -6,7 +6,16 @@
 
     <title>{% block title %}K{% endblock %}</title>
 
+    <meta name="theme-color" content="#050506">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="{{ url_for('web_manifest') }}">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='icons/icon-192.png') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='icons/apple-touch-icon.png') }}">
+
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/k-ui.css') }}">
 </head>
 
 <body>
@@ -48,6 +57,11 @@
             </a>
 
         </nav>
+
+        <a href="{{ url_for('notifications') }}" class="top-bell" aria-label="Notificações">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 8-3 8h18s-3-1-3-8"/><path d="M13.7 20a2 2 0 0 1-3.4 0"/></svg>
+            {% if unread_notifications %}<span class="notification-dot"></span>{% endif %}
+        </a>
 
         <div class="top-profile">
 
@@ -156,6 +170,13 @@
 
 
 <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+<script>
+    if ("serviceWorker" in navigator) {
+        window.addEventListener("load", function () {
+            navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch(function () {});
+        });
+    }
+</script>
 
 {% block scripts %}{% endblock %}
 

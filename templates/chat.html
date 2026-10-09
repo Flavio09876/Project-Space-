@@ -1,115 +1,49 @@
 {% extends "base.html" %}
+{% from "_components.html" import avatar with context %}
 
 {% block title %}Mensagens — K{% endblock %}
 
 {% block content %}
+<div class="k-page">
 
-<div class="chat-page">
-
-    <div class="page-heading">
-
+    <header class="k-pagehead">
         <div>
-            <span class="eyebrow">CONVERSAS</span>
+            <span class="k-eyebrow">Conversas</span>
             <h1>Mensagens</h1>
         </div>
+    </header>
 
-    </div>
+    {% if conversations %}
+    <div class="k-convos">
+        {% for c in conversations %}
+        <a class="k-convo" href="{{ url_for('conversation', username=c.username) }}">
 
+            {{ avatar(c.profile_photo, c.name, 'lg') }}
 
-    <section class="conversation-list">
-
-        {% if conversations %}
-
-            {% for conversation in conversations %}
-
-            <a
-                href="{{ url_for('conversation', username=conversation.username) }}"
-                class="conversation-item"
-            >
-
-                {% if conversation.profile_photo %}
-
-                    <img
-                        class="avatar avatar-medium"
-                        src="{{ conversation.profile_photo if conversation.profile_photo and conversation.profile_photo.startswith('http') else url_for('avatar_file', filename=conversation.profile_photo) }}"
-                        alt=""
-                    >
-
-                {% else %}
-
-                    <div class="avatar avatar-medium avatar-placeholder">
-                        {{ conversation.name[0]|upper }}
-                    </div>
-
-                {% endif %}
-
-
-                <div class="conversation-info">
-
-                    <div class="conversation-name">
-
-                        <strong>
-                            {{ conversation.name }}
-
-                            {% if conversation.verified %}
-                                <span class="verified-badge">✓</span>
-                            {% endif %}
-                        </strong>
-
-                        <time>
-                            {{ conversation.last_message_at }}
-                        </time>
-
-                    </div>
-
-                    <span class="conversation-username">
-                        @{{ conversation.username }}
+            <div class="k-convo__main">
+                <div class="k-convo__top">
+                    <span class="k-convo__name">
+                        {{ c.name }}{% if c.verified %}<span class="k-verified">✓</span>{% endif %}
                     </span>
-
-                    {% if conversation.last_message %}
-
-                        <p>
-                            {{ conversation.last_message }}
-                        </p>
-
-                    {% else %}
-
-                        <p class="muted">
-                            Nenhuma mensagem ainda.
-                        </p>
-
-                    {% endif %}
-
+                    <time class="k-convo__time">{{ c.last_message_at|pz_time('short') }}</time>
                 </div>
-
-            </a>
-
-            {% endfor %}
-
-        {% else %}
-
-            <div class="empty-state">
-
-                <div class="empty-icon">◌</div>
-
-                <h2>Nenhuma conversa</h2>
-
-                <p>
-                    Visite o perfil de alguém para iniciar uma conversa.
-                </p>
-
-                <a
-                    href="{{ url_for('discover') }}"
-                    class="button button-primary">
-                    Encontrar pessoas
-                </a>
-
+                <div class="k-convo__user">@{{ c.username }}</div>
+                <div class="k-convo__preview">
+                    {% if c.last_message %}{{ c.last_message|pz_preview }}{% else %}Nenhuma mensagem ainda.{% endif %}
+                </div>
             </div>
 
-        {% endif %}
-
-    </section>
+        </a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="k-empty">
+        <div class="k-empty__icon">◌</div>
+        <h2>Nenhuma conversa</h2>
+        <p>Visite o perfil de alguém para iniciar uma conversa.</p>
+        <a href="{{ url_for('discover') }}" class="k-btn k-btn--primary">Encontrar pessoas</a>
+    </div>
+    {% endif %}
 
 </div>
-
 {% endblock %}

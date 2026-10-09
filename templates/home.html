@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_components.html" import avatar, post_card with context %}
 
 {% block title %}Início — K{% endblock %}
 
@@ -50,114 +51,11 @@
 
         {% if posts %}
 
-            <div class="post-list">
+            <div class="k-feed">
 
                 {% for post in posts %}
 
-                <article class="post-card">
-
-                    <div class="post-header">
-
-                        <a href="{{ url_for('profile', username=post.username) }}"
-                           class="post-author">
-
-                            {% if post.profile_photo %}
-
-                                <img
-                                    class="avatar avatar-small"
-                                    src="{{ post.profile_photo if post.profile_photo and post.profile_photo.startswith('http') else url_for('avatar_file', filename=post.profile_photo) }}"
-                                    alt=""
-                                >
-
-                            {% else %}
-
-                                <div class="avatar avatar-small avatar-placeholder">
-                                    {{ post.name[0]|upper }}
-                                </div>
-
-                            {% endif %}
-
-                            <div>
-                                <strong>
-                                    {{ post.name }}
-
-                                    {% if post.verified %}
-                                        <span class="verified-badge"
-                                              title="Conta verificada">
-                                            ✓
-                                        </span>
-                                    {% endif %}
-                                </strong>
-
-                                <span>
-                                    @{{ post.username }}
-                                </span>
-                            </div>
-
-                        </a>
-
-                        <time>
-                            {{ post.created_at }}
-                        </time>
-
-                    </div>
-
-
-                    <div class="post-content"
-                         role="link"
-                         tabindex="0"
-                         style="cursor:pointer"
-                         onclick="window.location.href='{{ url_for('post_detail', post_id=post.id) }}'"
-                         onkeydown="if(event.key==='Enter'){window.location.href='{{ url_for('post_detail', post_id=post.id) }}'}">
-
-                        {% if post.content %}
-                            <p>{{ post.content }}</p>
-                        {% endif %}
-
-                        {% if post.media_filename %}
-
-                            <img
-                                class="post-image"
-                                src="{{ post.media_filename if post.media_filename and post.media_filename.startswith('http') else url_for('post_file', filename=post.media_filename) }}"
-                                alt="Imagem da publicação"
-                            >
-
-                        {% endif %}
-
-                    </div>
-
-
-                    <div class="post-actions">
-
-                        <button
-                            type="button"
-                            class="post-action like-button {% if post.liked %}liked{% endif %}"
-                            data-post-id="{{ post.id }}"
-                            onclick="toggleLike(this)">
-
-                            <span>♡</span>
-
-                            <span class="like-count">
-                                {{ post.like_count }}
-                            </span>
-
-                        </button>
-
-                        <a
-                            href="{{ url_for('post_detail', post_id=post.id) }}"
-                            class="post-action">
-
-                            <span>◌</span>
-
-                            <span>
-                                {{ post.comment_count }}
-                            </span>
-
-                        </a>
-
-                    </div>
-
-                </article>
+                {{ post_card(post, post.name, post.username, post.profile_photo, post.verified) }}
 
                 {% endfor %}
 

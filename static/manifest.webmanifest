@@ -1,0 +1,22 @@
+{
+  "name": "Project Space",
+  "short_name": "K",
+  "description": "Project Space — rede social K",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#050506",
+  "theme_color": "#050506",
+  "lang": "pt-BR",
+  "icons": [
+    { "src": "/static/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/static/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/static/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Mensagens", "url": "/chat" },
+    { "name": "Nova publicação", "url": "/create" }
+  ]
+}

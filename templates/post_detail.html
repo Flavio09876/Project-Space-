@@ -1,105 +1,47 @@
 {% extends "base.html" %}
+{% from "_components.html" import avatar, post_card with context %}
+
+{% block title %}Publicação — K{% endblock %}
+
 {% block content %}
-<div class="page-layout">
-    <section class="feed-column">
+<div class="k-page k-page--narrow">
 
-        <p>
-            <a href="{{ url_for('home') }}">← Voltar ao feed</a>
-        </p>
+    <a class="k-back" href="{{ url_for('home') }}">← Voltar ao feed</a>
 
-        <article class="post-card">
-            <header class="post-header">
-                <a href="{{ url_for('profile', username=post.username) }}"
-                   style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit">
-                    {% if post.profile_photo %}
-                        <img src="{{ post.profile_photo }}"
-                             alt="Foto de {{ post.name }}"
-                             class="avatar">
-                    {% else %}
-                        <div class="avatar-placeholder">{{ post.name[0]|upper }}</div>
-                    {% endif %}
+    {{ post_card(post, post.name, post.username, post.profile_photo, post.verified, detail=True) }}
 
-                    <span>
-                        <strong>{{ post.name }}</strong>
-                        {% if post.verified %}<span aria-label="Verificado">✓</span>{% endif %}
-                        <br>
-                        <small>@{{ post.username }}</small>
-                    </span>
+    <section class="k-comments">
+
+        <h2 class="k-comments__title">Comentários <span>{{ comments|length }}</span></h2>
+
+        <form class="k-comment-form" method="POST" action="{{ url_for('post_detail', post_id=post.id) }}">
+            <textarea name="content" maxlength="2000" rows="2" required
+                      placeholder="Escreva um comentário..."></textarea>
+            <button type="submit" class="k-btn k-btn--primary">Comentar</button>
+        </form>
+
+        <div class="k-comments__list">
+            {% for comment in comments %}
+            <article class="k-comment">
+                <a href="{{ url_for('profile', username=comment.username) }}">
+                    {{ avatar(comment.profile_photo, comment.name, 'sm') }}
                 </a>
-            </header>
+                <div class="k-comment__main">
+                    <div class="k-comment__head">
+                        <a class="k-comment__name" href="{{ url_for('profile', username=comment.username) }}">
+                            {{ comment.name }}{% if comment.verified %}<span class="k-verified">✓</span>{% endif %}
+                        </a>
+                        <span class="k-comment__meta">@{{ comment.username }} · {{ comment.created_at|pz_time('ago') }}</span>
+                    </div>
+                    <p class="k-comment__text">{{ comment.content }}</p>
+                </div>
+            </article>
+            {% else %}
+            <p class="k-comments__empty">Ainda não há comentários. Seja o primeiro a comentar.</p>
+            {% endfor %}
+        </div>
 
-            <div class="post-content">
-                {% if post.content %}
-                    <p>{{ post.content }}</p>
-                {% endif %}
-
-                {% if post.media_filename %}
-                    <img class="post-image"
-                         src="{{ post.media_filename if post.media_filename.startswith('http') else url_for('post_file', filename=post.media_filename) }}"
-                         alt="Imagem da publicação">
-                {% endif %}
-            </div>
-
-            <p><small>{{ post.created_at }}</small></p>
-
-            <div class="post-actions">
-                <button type="button"
-                        class="post-action like-button {% if post.liked %}liked{% endif %}"
-                        data-post-id="{{ post.id }}"
-                        onclick="toggleLike(this)">
-                    ♥ <span class="like-count">{{ post.like_count }}</span> curtidas
-                </button>
-
-                <span class="post-action">
-                    💬 {{ comments|length }} comentários
-                </span>
-            </div>
-        </article>
-
-        <section class="post-card">
-            <h2>Comentários ({{ comments|length }})</h2>
-
-            <form method="POST"
-                  action="{{ url_for('post_detail', post_id=post.id) }}">
-                <textarea name="content"
-                          maxlength="2000"
-                          rows="3"
-                          required
-                          placeholder="Escreva um comentário..."
-                          style="width:100%;box-sizing:border-box"></textarea>
-                <button type="submit">Comentar</button>
-            </form>
-
-            <div class="comments-list">
-                {% for comment in comments %}
-                    <article class="comment-item"
-                             style="padding:12px 0;border-bottom:1px solid var(--border-color, #333)">
-                        <div style="display:flex;align-items:center;gap:8px">
-                            {% if comment.profile_photo %}
-                                <img src="{{ comment.profile_photo }}"
-                                     alt=""
-                                     class="avatar-small">
-                            {% else %}
-                                <span class="avatar-placeholder">{{ comment.name[0]|upper }}</span>
-                            {% endif %}
-
-                            <div>
-                                <a href="{{ url_for('profile', username=comment.username) }}">
-                                    <strong>{{ comment.name }}</strong>
-                                </a>
-                                {% if comment.verified %}<span>✓</span>{% endif %}
-                                <small>@{{ comment.username }}</small>
-                            </div>
-                        </div>
-
-                        <p style="white-space:pre-wrap;overflow-wrap:anywhere">{{ comment.content }}</p>
-                        <small>{{ comment.created_at }}</small>
-                    </article>
-                {% else %}
-                    <p>Ainda não há comentários. Seja o primeiro a comentar.</p>
-                {% endfor %}
-            </div>
-        </section>
     </section>
+
 </div>
 {% endblock %}

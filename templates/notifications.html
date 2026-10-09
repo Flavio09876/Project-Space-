@@ -68,7 +68,7 @@
                     </p>
 
                     <time>
-                        {{ notification.created_at }}
+                        {{ notification.created_at|pz_time("ago") }}
                     </time>
 
                 </div>

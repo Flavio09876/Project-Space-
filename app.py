@@ -352,6 +352,106 @@ def login_required(function):
     return wrapper
 
 
+# ============================================================
+# FILTROS DE TEMPLATE (datas, prévia de mensagem, avatar)
+# ============================================================
+
+from datetime import datetime, timedelta, timezone as _tz
+
+# Fuso usado para exibir horários (Belém/Brasília = UTC-3, sem horário de verão).
+# O banco guarda em UTC. Para mudar, altere o número de horas abaixo.
+_PZ_TZ = _tz(timedelta(hours=-3))
+_PZ_MONTHS = ["jan", "fev", "mar", "abr", "mai", "jun",
+              "jul", "ago", "set", "out", "nov", "dez"]
+
+
+def _pz_to_local(value):
+    if value is None or value == "":
+        return None
+
+    if isinstance(value, datetime):
+        moment = value
+    else:
+        text = str(value).strip()
+        try:
+            moment = datetime.fromisoformat(text)
+        except ValueError:
+            try:
+                moment = datetime.strptime(text[:19], "%Y-%m-%d %H:%M:%S")
+            except ValueError:
+                return None
+
+    if moment.tzinfo is None:
+        moment = moment.replace(tzinfo=_tz.utc)
+
+    return moment.astimezone(_PZ_TZ)
+
+
+@app.template_filter("pz_time")
+def pz_time(value, mode="ago"):
+    """mode: 'ago' (há 5 min), 'short' (11:04 / ontem / 09 out), 'full' (9 out 2026 · 11:04)."""
+
+    moment = _pz_to_local(value)
+
+    if moment is None:
+        return ""
+
+    now = datetime.now(_PZ_TZ)
+    seconds = (now - moment).total_seconds()
+    days = (now.date() - moment.date()).days
+    clock = moment.strftime("%H:%M")
+    day_month = f"{moment.day} {_PZ_MONTHS[moment.month - 1]}"
+
+    if mode == "full":
+        return f"{day_month} {moment.year} · {clock}"
+
+    if mode == "short":
+        if days == 0:
+            return clock
+        if days == 1:
+            return "ontem"
+        if moment.year == now.year:
+            return day_month
+        return f"{day_month} {moment.year}"
+
+    if seconds < 60:
+        return "agora"
+    if seconds < 3600:
+        return f"{int(seconds // 60)} min"
+    if seconds < 86400 and days == 0:
+        return f"{int(seconds // 3600)} h"
+    if days == 1:
+        return "ontem"
+    if moment.year == now.year:
+        return day_month
+    return f"{day_month} {moment.year}"
+
+
+@app.template_filter("pz_preview")
+def pz_preview(content):
+    """Troca a marcação interna de mídia por algo legível na lista de conversas."""
+
+    text = (content or "").strip()
+
+    if text.startswith("[[PZ_MEDIA]]"):
+        parts = text[len("[[PZ_MEDIA]]"):].split("[[PZ_TEXT]]", 1)
+        caption = parts[1].strip() if len(parts) > 1 else ""
+        return f"📷 {caption}" if caption else "📷 Foto"
+
+    return text
+
+
+@app.template_filter("pz_avatar")
+def pz_avatar(photo):
+    if not photo:
+        return ""
+
+    if str(photo).startswith("http"):
+        return photo
+
+    return url_for("avatar_file", filename=photo)
+
+
 @app.context_processor
 def inject_global_data():
 
@@ -2172,6 +2272,31 @@ def chat():
 # ============================================================
 # CONVERSATION
 # ============================================================
+
+# ============================================================
+# PWA (instalável no celular / base para gerar APK)
+# ============================================================
+
+@app.route("/sw.js")
+def service_worker():
+    response = send_from_directory(
+        os.path.join(app.root_path, "static"),
+        "sw.js",
+        mimetype="application/javascript",
+    )
+    response.headers["Cache-Control"] = "no-cache"
+    response.headers["Service-Worker-Allowed"] = "/"
+    return response
+
+
+@app.route("/manifest.webmanifest")
+def web_manifest():
+    return send_from_directory(
+        os.path.join(app.root_path, "static"),
+        "manifest.webmanifest",
+        mimetype="application/manifest+json",
+    )
+
 
 @app.route("/chat/<username>")
 @login_required

@@ -1,0 +1,63 @@
+{# Componentes compartilhados do K. Importe com: {% from "_components.html" import ... with context %} #}
+
+{% macro avatar(photo, name, size='md') -%}
+    {%- set src = photo|pz_avatar -%}
+    {%- if src -%}
+        <img class="k-avatar k-avatar--{{ size }}" src="{{ src }}" alt="" loading="lazy">
+    {%- else -%}
+        <span class="k-avatar k-avatar--{{ size }} k-avatar--empty" aria-hidden="true">{{ (name or '?')[0]|upper }}</span>
+    {%- endif -%}
+{%- endmacro %}
+
+
+{% macro post_card(post, name, username, photo, verified, detail=False) %}
+<article class="k-post {% if detail %}k-post--detail{% endif %}">
+
+    <header class="k-post__head">
+        <a class="k-post__author" href="{{ url_for('profile', username=username) }}">
+            {{ avatar(photo, name, 'md') }}
+            <span class="k-post__who">
+                <span class="k-post__name">
+                    {{ name }}{% if verified %}<span class="k-verified" title="Conta verificada">✓</span>{% endif %}
+                </span>
+                <span class="k-post__meta">@{{ username }}</span>
+            </span>
+        </a>
+        <time class="k-post__time" title="{{ post.created_at|pz_time('full') }}">
+            {{ post.created_at|pz_time('full' if detail else 'ago') }}
+        </time>
+    </header>
+
+    {% if detail %}
+    <div class="k-post__body">
+    {% else %}
+    <a class="k-post__body" href="{{ url_for('post_detail', post_id=post.id) }}">
+    {% endif %}
+        {% if post.content %}<p class="k-post__text">{{ post.content }}</p>{% endif %}
+        {% if post.media_filename %}
+            <img class="k-post__media"
+                 src="{{ post.media_filename if post.media_filename.startswith('http') else url_for('post_file', filename=post.media_filename) }}"
+                 alt="Imagem da publicação" loading="lazy">
+        {% endif %}
+    {% if detail %}</div>{% else %}</a>{% endif %}
+
+    <footer class="k-post__actions">
+        <button type="button"
+                class="k-action k-like {% if post.liked %}liked{% endif %}"
+                data-post-id="{{ post.id }}"
+                onclick="toggleLike(this)"
+                aria-label="Curtir">
+            <span class="k-heart">{{ '♥' if post.liked else '♡' }}</span>
+            <span class="like-count">{{ post.like_count|default(0) }}</span>
+        </button>
+
+        {% if post.comment_count is defined %}
+        <a class="k-action" href="{{ url_for('post_detail', post_id=post.id) }}" aria-label="Comentários">
+            <span class="k-ico">◌</span>
+            <span>{{ post.comment_count }}</span>
+        </a>
+        {% endif %}
+    </footer>
+
+</article>
+{% endmacro %}

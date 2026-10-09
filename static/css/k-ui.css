@@ -1,0 +1,386 @@
+/* =========================================================
+   K UI — sistema de componentes (preto + vermelho)
+   Carregado DEPOIS do style.css. Tudo aqui usa o prefixo k-
+   e não depende das regras antigas.
+========================================================= */
+
+/* ---------- Avatares ---------- */
+
+.k-avatar {
+    display: inline-grid;
+    flex: 0 0 auto;
+    place-items: center;
+    overflow: hidden;
+    border-radius: 50%;
+    object-fit: cover;
+    background: var(--k-surface-raised);
+    color: var(--k-text);
+    font-weight: 800;
+    box-shadow: 0 0 0 2px var(--k-bg), 0 0 0 3px rgba(225, 29, 46, .55);
+}
+
+.k-avatar--sm { width: 36px; height: 36px; font-size: 15px; }
+.k-avatar--md { width: 46px; height: 46px; font-size: 18px; }
+.k-avatar--lg { width: 58px; height: 58px; font-size: 22px; }
+
+.k-avatar--empty {
+    background: linear-gradient(145deg, #2a2a30, #151518);
+}
+
+.k-verified {
+    display: inline-grid;
+    place-items: center;
+    width: 16px;
+    height: 16px;
+    margin-left: 6px;
+    border-radius: 50%;
+    background: var(--k-accent);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 900;
+    vertical-align: 1px;
+}
+
+/* ---------- Botões ---------- */
+
+.k-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 0 22px;
+    border: 1px solid var(--k-border-strong);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--k-text);
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform var(--k-transition), box-shadow var(--k-transition), border-color var(--k-transition);
+}
+
+.k-btn--primary {
+    border-color: rgba(255, 90, 105, .45);
+    background: linear-gradient(135deg, #ff2d40, #e11d2e 55%, #b3101e);
+    color: #fff;
+    box-shadow: 0 8px 24px rgba(225, 29, 46, .35);
+}
+
+.k-btn--primary:hover { transform: translateY(-1px); box-shadow: 0 12px 30px rgba(225, 29, 46, .5); }
+
+/* ---------- Páginas ---------- */
+
+.k-page { width: 100%; max-width: 760px; margin: 0 auto; }
+.k-page--narrow { max-width: 680px; }
+
+.k-pagehead {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    margin: 4px 0 22px;
+}
+
+.k-pagehead h1 {
+    margin: 4px 0 0;
+    font-size: clamp(28px, 7vw, 38px);
+    line-height: 1.1;
+    letter-spacing: -.03em;
+}
+
+.k-eyebrow {
+    color: var(--k-accent-hover);
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+}
+
+.k-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 16px;
+    color: var(--k-muted);
+    font-weight: 600;
+    transition: color var(--k-transition);
+}
+
+.k-back:hover { color: var(--k-text); }
+
+/* ---------- Feed e publicação ---------- */
+
+.k-feed { display: grid; gap: 14px; }
+
+.k-post {
+    display: grid;
+    gap: 12px;
+    min-width: 0;
+    padding: 16px;
+    border: 1px solid var(--k-border);
+    border-radius: var(--k-radius-lg);
+    background: linear-gradient(180deg, rgba(255, 255, 255, .03), rgba(255, 255, 255, 0) 45%), var(--k-surface);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .45);
+    transition: border-color var(--k-transition), box-shadow var(--k-transition);
+}
+
+.k-post + .k-post { margin-top: 14px; }
+.k-feed > .k-post + .k-post { margin-top: 0; }
+
+.k-post:hover { border-color: rgba(225, 29, 46, .45); }
+
+.k-post__head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.k-post__author {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+}
+
+.k-post__who { display: grid; min-width: 0; line-height: 1.3; }
+
+.k-post__name {
+    overflow: hidden;
+    font-size: 15px;
+    font-weight: 750;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.k-post__meta,
+.k-post__time {
+    color: var(--k-muted);
+    font-size: 13px;
+}
+
+.k-post__meta { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.k-post__time { flex: 0 0 auto; padding-top: 3px; white-space: nowrap; }
+
+.k-post__body { display: grid; gap: 12px; min-width: 0; color: inherit; }
+
+.k-post__text {
+    margin: 0;
+    color: var(--k-text);
+    line-height: 1.6;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.k-post__media {
+    display: block;
+    width: 100%;
+    max-height: 560px;
+    border: 1px solid var(--k-border);
+    border-radius: var(--k-radius-md);
+    background: #000;
+    object-fit: cover;
+}
+
+.k-post--detail .k-post__text { font-size: 17px; line-height: 1.65; }
+.k-post--detail .k-post__media { max-height: 80vh; object-fit: contain; }
+
+.k-post__actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin: 0 -8px -6px;
+}
+
+.k-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 8px 12px;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--k-muted);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: color var(--k-transition), background var(--k-transition);
+}
+
+.k-action:hover { background: var(--k-accent-soft); color: var(--k-text); }
+.k-heart, .k-ico { font-size: 18px; line-height: 1; }
+.k-like.liked { color: var(--k-accent-hover); }
+.k-like.liked .k-heart { animation: k-pop .3s ease; }
+
+@keyframes k-pop { 50% { transform: scale(1.35); } }
+
+/* ---------- Conversas ---------- */
+
+.k-convos { display: grid; gap: 10px; }
+
+.k-convo {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    border: 1px solid var(--k-border);
+    border-radius: var(--k-radius-lg);
+    background: var(--k-surface);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .4);
+    transition: border-color var(--k-transition), transform var(--k-transition);
+}
+
+.k-convo:hover { border-color: rgba(225, 29, 46, .55); transform: translateY(-1px); }
+
+.k-convo__main { min-width: 0; }
+
+.k-convo__top {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.k-convo__name {
+    overflow: hidden;
+    font-size: 16px;
+    font-weight: 750;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.k-convo__time { flex: 0 0 auto; color: var(--k-muted); font-size: 12.5px; }
+.k-convo__user { color: var(--k-muted); font-size: 13px; }
+
+.k-convo__preview {
+    margin-top: 4px;
+    overflow: hidden;
+    color: var(--k-text-soft);
+    font-size: 14px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ---------- Comentários ---------- */
+
+.k-comments { margin-top: 22px; }
+
+.k-comments__title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 14px;
+    font-size: 19px;
+    letter-spacing: -.02em;
+}
+
+.k-comments__title span {
+    padding: 2px 10px;
+    border-radius: 999px;
+    background: var(--k-accent-soft);
+    color: var(--k-accent-hover);
+    font-size: 13px;
+}
+
+.k-comment-form {
+    display: grid;
+    gap: 10px;
+    padding: 14px;
+    border: 1px solid var(--k-border);
+    border-radius: var(--k-radius-lg);
+    background: var(--k-surface);
+}
+
+.k-comment-form textarea {
+    width: 100%;
+    min-height: 76px;
+    padding: 12px 14px;
+    resize: vertical;
+    border-radius: var(--k-radius-md);
+    color: var(--k-text);
+    line-height: 1.5;
+}
+
+.k-comment-form .k-btn { justify-self: end; }
+
+.k-comments__list { margin-top: 6px; }
+
+.k-comment {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 12px;
+    padding: 16px 2px;
+    border-bottom: 1px solid var(--k-border);
+}
+
+.k-comment__head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
+.k-comment__name { font-weight: 750; }
+.k-comment__meta { color: var(--k-muted); font-size: 13px; }
+
+.k-comment__text {
+    margin: 4px 0 0;
+    color: var(--k-text-soft);
+    line-height: 1.55;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.k-comments__empty { padding: 24px 0; color: var(--k-muted); text-align: center; }
+
+/* ---------- Estado vazio ---------- */
+
+.k-empty {
+    display: grid;
+    justify-items: center;
+    gap: 10px;
+    padding: 56px 20px;
+    border: 1px dashed var(--k-border-strong);
+    border-radius: var(--k-radius-xl);
+    text-align: center;
+}
+
+.k-empty h2 { margin: 6px 0 0; font-size: 20px; }
+.k-empty p { max-width: 320px; margin: 0 0 8px; color: var(--k-muted); }
+
+.k-empty__icon {
+    display: grid;
+    place-items: center;
+    width: 68px;
+    height: 68px;
+    border-radius: 50%;
+    background: linear-gradient(145deg, #ff2d40, #8f0a16);
+    color: #fff;
+    font-size: 28px;
+    box-shadow: 0 10px 30px rgba(225, 29, 46, .4);
+}
+
+/* ---------- Topo no celular ---------- */
+
+.top-bell {
+    position: relative;
+    display: none;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    margin-left: auto;
+    border-radius: 50%;
+    color: var(--k-text-soft);
+}
+
+.top-bell .notification-dot { position: absolute; top: 8px; right: 9px; }
+
+@media (max-width: 700px) {
+    .topbar { gap: 10px; min-height: 60px; padding: 0 16px; }
+    .top-navigation { display: none; }
+    .top-bell { display: grid; }
+    .main-content { width: calc(100% - 32px); padding-top: 20px; }
+
+    .k-post { padding: 14px; border-radius: 18px; }
+    .k-convo { padding: 12px 14px; gap: 12px; }
+    .k-avatar--lg { width: 52px; height: 52px; }
+}
+
+@media (min-width: 701px) {
+    .top-bell { display: none; }
+}
