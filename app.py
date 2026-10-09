@@ -2135,7 +2135,11 @@ def get_or_create_conversation(
 
         GROUP BY c.id
 
-        HAVING COUNT(*) = 2
+        HAVING (
+            SELECT COUNT(*)
+            FROM conversation_members x
+            WHERE x.conversation_id = c.id
+        ) = 2
 
         ORDER BY (
             SELECT MAX(m.created_at)
@@ -2377,7 +2381,11 @@ def conversation(username):
             WHERE mine.user_id = %s
               AND other_member.user_id = %s
             GROUP BY mine.conversation_id
-            HAVING COUNT(*) = 2
+            HAVING (
+                SELECT COUNT(*)
+                FROM conversation_members x
+                WHERE x.conversation_id = mine.conversation_id
+            ) = 2
         )
         ORDER BY m.id DESC
         LIMIT 200
@@ -2569,7 +2577,11 @@ def api_messages(conversation_id):
               WHERE mine.user_id = %s
                 AND other_member.user_id = %s
               GROUP BY mine.conversation_id
-              HAVING COUNT(*) = 2
+              HAVING (
+                  SELECT COUNT(*)
+                  FROM conversation_members x
+                  WHERE x.conversation_id = mine.conversation_id
+              ) = 2
           )
         ORDER BY m.id ASC
         LIMIT 100
