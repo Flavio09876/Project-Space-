@@ -1987,6 +1987,12 @@ def get_or_create_conversation(
 
         HAVING COUNT(*) = 2
 
+        ORDER BY (
+            SELECT MAX(m.created_at)
+            FROM messages m
+            WHERE m.conversation_id = c.id
+        ) DESC NULLS LAST, c.id DESC
+
         LIMIT 1
         """,
         (
@@ -2061,68 +2067,49 @@ def chat():
 
     conversations = query_all(
         """
-        SELECT
-            c.id,
-
-            other.id AS other_id,
-
-            other.name AS name,
-
-            other.username AS username,
-
-            other.profile_photo AS profile_photo,
-
-            other.verified AS verified,
-
-            (
-                SELECT m.content
-
-                FROM messages m
-
-                WHERE m.conversation_id = c.id
-
-                ORDER BY m.id DESC
-
-                LIMIT 1
-
-            ) AS last_message,
-
-            (
-                SELECT m.created_at
-
-                FROM messages m
-
-                WHERE m.conversation_id = c.id
-
-                ORDER BY m.id DESC
-
-                LIMIT 1
-
-            ) AS last_message_at
-
-        FROM conversations c
-
-        JOIN conversation_members mine
-          ON mine.conversation_id = c.id
-
-        JOIN conversation_members other_member
-          ON other_member.conversation_id = c.id
-
-        JOIN users other
-          ON other.id = other_member.user_id
-
-        WHERE mine.user_id = %s
-
-          AND other_member.user_id != %s
-
-        ORDER BY
-            last_message_at DESC,
-            c.id DESC
-        """,
-        (
-            user["id"],
-            user["id"],
+        WITH conversation_rows AS (
+            SELECT
+                c.id,
+                other.id AS other_id,
+                other.name AS name,
+                other.username AS username,
+                other.profile_photo AS profile_photo,
+                other.verified AS verified,
+                (
+                    SELECT m.content
+                    FROM messages m
+                    WHERE m.conversation_id = c.id
+                    ORDER BY m.id DESC
+                    LIMIT 1
+                ) AS last_message,
+                (
+                    SELECT m.created_at
+                    FROM messages m
+                    WHERE m.conversation_id = c.id
+                    ORDER BY m.id DESC
+                    LIMIT 1
+                ) AS last_message_at
+            FROM conversations c
+            JOIN conversation_members mine
+              ON mine.conversation_id = c.id
+            JOIN conversation_members other_member
+              ON other_member.conversation_id = c.id
+            JOIN users other
+              ON other.id = other_member.user_id
+            WHERE mine.user_id = %s
+              AND other_member.user_id != %s
         ),
+        unique_conversations AS (
+            SELECT DISTINCT ON (other_id) *
+            FROM conversation_rows
+            WHERE last_message IS NOT NULL
+            ORDER BY other_id, last_message_at DESC NULLS LAST, id DESC
+        )
+        SELECT *
+        FROM unique_conversations
+        ORDER BY last_message_at DESC NULLS LAST, id DESC
+        """,
+        (user["id"], user["id"]),
     )
 
 
