@@ -2239,133 +2239,94 @@ def conversation(username):
     "/api/chat/<int:conversation_id>/send"
 )
 @login_required
-def send_message(
-    conversation_id,
-):
-
+def send_message(conversation_id):
     user = get_current_user()
-
-
     member = query_one(
         """
-        SELECT 1
-
-        FROM conversation_members
-
-        WHERE conversation_id = %s
-
-          AND user_id = %s
+        SELECT 1 FROM conversation_members
+        WHERE conversation_id = %s AND user_id = %s
         """,
-        (
-            conversation_id,
-            user["id"],
-        ),
+        (conversation_id, user["id"]),
     )
 
-
     if not member:
+        return jsonify({"ok": False, "error": "Acesso negado."}), 403
 
-        return jsonify(
-            {
-                "ok": False,
-                "error":
-                    "Acesso negado.",
-            }
-        ), 403
-
-
-    payload = request.get_json(silent=True)
-
+    payload = request.get_json(silent=True) if request.is_json else {}
     if not isinstance(payload, dict):
         payload = {}
 
-    content = payload.get(
-        "content",
-        request.form.get("content", ""),
-    )
-
+    content = payload.get("content", request.form.get("content", ""))
     if not isinstance(content, str):
         content = ""
-
     content = content.strip()
 
+    attachment = request.files.get("attachment")
+    has_attachment = bool(attachment and attachment.filename)
 
-    if not content:
-
-        return jsonify(
-            {
-                "ok": False,
-                "error":
-                    "Mensagem vazia.",
-            }
-        ), 400
-
+    if not content and not has_attachment:
+        return jsonify({
+            "ok": False,
+            "error": "Digite uma mensagem ou selecione uma imagem.",
+        }), 400
 
     if len(content) > 5000:
+        return jsonify({
+            "ok": False,
+            "error": "Mensagem muito grande. Limite: 5.000 caracteres.",
+        }), 400
 
-        return jsonify(
-            {
+    if has_attachment:
+        if not valid_image(attachment.filename):
+            return jsonify({
                 "ok": False,
-                "error":
-                    "Mensagem muito grande.",
-            }
-        ), 400
+                "error": "Formato inválido. Use JPG, PNG, WebP ou GIF.",
+            }), 400
+        try:
+            image_url = save_upload(attachment, POST_DIR)
+        except Exception:
+            app.logger.exception("Erro no upload de imagem do chat")
+            return jsonify({
+                "ok": False,
+                "error": "Falha ao enviar imagem. Tente novamente.",
+            }), 502
 
+        if not image_url:
+            return jsonify({
+                "ok": False,
+                "error": "Não foi possível processar a imagem.",
+            }), 400
+
+        # Formato: [[PZ_MEDIA]]URL[[PZ_TEXT]]texto
+        content = "[[PZ_MEDIA]]" + image_url + "[[PZ_TEXT]]" + content
 
     message_id = execute(
         """
-        INSERT INTO messages
-        (
-            conversation_id,
-            sender_id,
-            content
-        )
-
+        INSERT INTO messages (conversation_id, sender_id, content)
         VALUES (%s, %s, %s)
         RETURNING id
         """,
-        (
-            conversation_id,
-            user["id"],
-            content,
-        ),
+        (conversation_id, user["id"], content),
     )
-
 
     target = query_one(
         """
-        SELECT user_id
-
-        FROM conversation_members
-
-        WHERE conversation_id = %s
-
-          AND user_id != %s
-
+        SELECT user_id FROM conversation_members
+        WHERE conversation_id = %s AND user_id != %s
         LIMIT 1
         """,
-        (
-            conversation_id,
-            user["id"],
-        ),
+        (conversation_id, user["id"]),
     )
 
-
     if target:
-
         create_notification(
-            target["user_id"],
-            user["id"],
-            "message",
-            conversation_id,
+            target["user_id"], user["id"], "message", conversation_id
         )
-
 
     message = query_one(
         """
         SELECT id, sender_id, content, created_at
-        FROM messages
-        WHERE id = %s
+        FROM messages WHERE id = %s
         """,
         (message_id,),
     )
@@ -2373,19 +2334,14 @@ def send_message(
     if not message:
         return jsonify({
             "ok": False,
-            "error": "A mensagem foi salva, mas não foi possível carregá-la.",
+            "error": "A mensagem foi salva, mas não pôde ser carregada.",
         }), 500
 
     message = dict(message)
     message["created_at"] = str(message["created_at"])
-
-    return jsonify({
-        "ok": True,
-        "message": message,
-    })
+    return jsonify({"ok": True, "message": message})
 
 
-# ============================================================
 # GET MESSAGES
 # ============================================================
 
