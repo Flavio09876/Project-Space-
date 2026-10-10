@@ -11,12 +11,14 @@
             <span class="k-eyebrow">Conversas</span>
             <h1>Mensagens</h1>
         </div>
+        <a class="k-btn k-btn--primary k-btn--small" href="{{ url_for('discover') }}">Nova conversa</a>
     </header>
 
     {% if conversations %}
-    <div class="k-convos">
+    <input class="k-search-input" type="search" id="convo-filter" placeholder="Buscar conversa" aria-label="Buscar conversa">
+    <div class="k-convos" id="convo-list">
         {% for c in conversations %}
-        <a class="k-convo" href="{{ url_for('conversation', username=c.username) }}">
+        <a class="k-convo {{ 'k-convo--unread' if unread_map.get(c.other_id) }}" data-search="{{ (c.name ~ ' ' ~ c.username)|lower }}" href="{{ url_for('conversation', username=c.username) }}">
 
             {{ avatar(c.profile_photo, c.name, 'lg') }}
 
@@ -28,8 +30,11 @@
                     <time class="k-convo__time">{{ c.last_message_at|pz_time('short') }}</time>
                 </div>
                 <div class="k-convo__user">@{{ c.username }}</div>
-                <div class="k-convo__preview">
-                    {% if c.last_message %}{{ c.last_message|pz_preview }}{% else %}Nenhuma mensagem ainda.{% endif %}
+                <div class="k-convo__bottom">
+                    <div class="k-convo__preview">
+                        {% if c.last_message %}{{ c.last_message|pz_preview }}{% else %}Nenhuma mensagem ainda.{% endif %}
+                    </div>
+                    {% if unread_map.get(c.other_id) %}<span class="k-convo__badge">{{ unread_map.get(c.other_id) }}</span>{% endif %}
                 </div>
             </div>
 
@@ -46,4 +51,19 @@
     {% endif %}
 
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    (function () {
+        var input = document.getElementById("convo-filter");
+        if (!input) return;
+        input.addEventListener("input", function () {
+            var term = input.value.trim().toLowerCase();
+            document.querySelectorAll("#convo-list .k-convo").forEach(function (item) {
+                item.hidden = term && item.dataset.search.indexOf(term) === -1;
+            });
+        });
+    })();
+</script>
 {% endblock %}

@@ -1,71 +1,30 @@
 {% extends "base.html" %}
-
-{% block title %}K{% endblock %}
-
+{% block title %}K — Um espaço para conexões reais{% endblock %}
 {% block content %}
+<section class="k-hero">
+    <div class="k-hero__glow" aria-hidden="true"></div>
 
-<section class="welcome-page">
+    <div class="k-hero__logo">K</div>
+    <span class="k-eyebrow">Project Space</span>
+    <h1>Um espaço para<br><em>conexões reais.</em></h1>
+    <p class="k-hero__lead">
+        Crie seu perfil, compartilhe momentos, converse em privado e descubra pessoas e comunidades — num lugar escuro, rápido e sem ruído.
+    </p>
 
-    <div class="welcome-background">
-        <div class="welcome-glow glow-one"></div>
-        <div class="welcome-glow glow-two"></div>
+    <div class="k-hero__cta">
+        <a class="k-btn k-btn--primary k-btn--lg" href="{{ url_for('register') }}">Criar conta</a>
+        <a class="k-btn k-btn--lg" href="{{ url_for('login') }}">Entrar</a>
     </div>
 
-    <div class="welcome-content">
-
-        <div class="welcome-logo">
-            Z
-        </div>
-
-        <span class="eyebrow">
-            K
-        </span>
-
-        <h1>
-            Um espaço para<br>
-            <strong>conexões reais.</strong>
-        </h1>
-
-        <p>
-            Crie seu perfil, compartilhe momentos,
-            converse com pessoas e descubra novas comunidades.
-        </p>
-
-        <div class="welcome-actions">
-
-            <a href="{{ url_for('register') }}"
-               class="button button-primary">
-                Criar conta
-            </a>
-
-            <a href="{{ url_for('login') }}"
-               class="button button-secondary">
-                Entrar
-            </a>
-
-        </div>
-
-        <div class="welcome-features">
-
-            <div>
-                <span>◉</span>
-                <p>Seu perfil</p>
-            </div>
-
-            <div>
-                <span>◌</span>
-                <p>Conversas</p>
-            </div>
-
-            <div>
-                <span>◇</span>
-                <p>Comunidades</p>
-            </div>
-
-        </div>
-
+    <div class="k-features">
+        <div class="k-feature"><span>◉</span><strong>Perfil</strong><p>Foto, capa, bio e status do seu jeito.</p></div>
+        <div class="k-feature"><span>◌</span><strong>Conversas</strong><p>Mensagens privadas com fotos.</p></div>
+        <div class="k-feature"><span>◇</span><strong>Controle</strong><p>Bloqueie, denuncie e apague quando quiser.</p></div>
     </div>
 
+    <footer class="k-hero__foot">
+        <a href="{{ url_for('extras.terms') }}">Termos</a>
+        <a href="{{ url_for('extras.privacy') }}">Privacidade</a>
+    </footer>
 </section>
-
 {% endblock %}

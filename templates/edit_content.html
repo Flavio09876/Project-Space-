@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} — K{% endblock %}
+{% block content %}
+<div class="k-page k-page--narrow">
+    <a class="k-back" href="{{ back }}">← Cancelar</a>
+    <form method="POST" class="k-card">
+        <h2>{{ title }}</h2>
+        <div class="k-field">
+            <textarea name="content" rows="7" maxlength="{{ max_length }}" required autofocus>{{ content }}</textarea>
+        </div>
+        <button type="submit" class="k-btn k-btn--primary">Salvar alterações</button>
+    </form>
+</div>
+{% endblock %}

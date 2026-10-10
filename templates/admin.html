@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+{% from "_components.html" import avatar with context %}
+{% block title %}Painel — K{% endblock %}
+{% block content %}
+{% set here = request.full_path.rstrip('?') %}
+<div class="k-page">
+
+    <header class="k-pagehead">
+        <div>
+            <span class="k-eyebrow">Administração</span>
+            <h1>Painel</h1>
+        </div>
+    </header>
+
+    <nav class="k-tabs" aria-label="Seções do painel">
+        <a href="{{ url_for('extras.admin', tab='overview') }}" class="{{ 'on' if tab == 'overview' }}">Visão geral</a>
+        <a href="{{ url_for('extras.admin', tab='reports') }}" class="{{ 'on' if tab == 'reports' }}">
+            Denúncias{% if open_reports %}<span class="k-count">{{ open_reports }}</span>{% endif %}</a>
+        <a href="{{ url_for('extras.admin', tab='users') }}" class="{{ 'on' if tab == 'users' }}">Usuários</a>
+        <a href="{{ url_for('extras.admin', tab='posts') }}" class="{{ 'on' if tab == 'posts' }}">Publicações</a>
+        <a href="{{ url_for('extras.admin', tab='log') }}" class="{{ 'on' if tab == 'log' }}">Registro</a>
+    </nav>
+
+    {% if tab in ('users', 'posts') %}
+    <form class="k-search" method="GET">
+        <input type="hidden" name="tab" value="{{ tab }}">
+        <input type="search" name="q" value="{{ q }}" placeholder="{{ 'Buscar por @, nome ou e-mail' if tab == 'users' else 'Buscar texto ou @autor' }}">
+        <button class="k-btn k-btn--small" type="submit">Buscar</button>
+    </form>
+    {% endif %}
+
+    {% if tab == 'overview' %}
+    <div class="k-stats">
+        <div class="k-stat"><strong>{{ stats.users }}</strong><span>contas</span></div>
+        <div class="k-stat"><strong>{{ stats.users_7d }}</strong><span>novas em 7 dias</span></div>
+        <div class="k-stat"><strong>{{ stats.posts }}</strong><span>publicações</span></div>
+        <div class="k-stat"><strong>{{ stats.comments }}</strong><span>comentários</span></div>
+        <div class="k-stat"><strong>{{ stats.messages }}</strong><span>mensagens</span></div>
+        <div class="k-stat {{ 'k-stat--alert' if stats.open_reports }}"><strong>{{ stats.open_reports }}</strong><span>denúncias abertas</span></div>
+        <div class="k-stat"><strong>{{ stats.banned }}</strong><span>banidas</span></div>
+        <div class="k-stat"><strong>{{ stats.unverified }}</strong><span>e-mail não confirmado</span></div>
+    </div>
+    <h2 class="k-sub">Cadastros recentes</h2>
+    {% for person in recent_users %}
+    <div class="k-row">
+        {{ avatar(person.profile_photo, person.name, 'sm') }}
+        <div class="k-row__main">
+            <a href="{{ url_for('profile', username=person.username) }}"><strong>{{ person.name }}</strong></a>
+            <span class="k-muted">@{{ person.username }} · {{ person.created_at|pz_time('ago') }}</span>
+        </div>
+    </div>
+    {% endfor %}
+    <p class="k-hint">Mensagens privadas não aparecem aqui: só o conteúdo denunciado chega até a equipe.</p>
+
+    {% elif tab == 'reports' %}
+    <div class="k-chips">
+        <a href="{{ url_for('extras.admin', tab='reports') }}" class="{{ 'on' if not closed }}">Abertas</a>
+        <a href="{{ url_for('extras.admin', tab='reports', status='closed') }}" class="{{ 'on' if closed }}">Resolvidas</a>
+    </div>
+    {% for r in reports %}
+    <article class="k-card k-report">
+        <div class="k-report__top">
+            <span class="k-pill k-pill--warn">{{ {'post':'Publicação','comment':'Comentário','user':'Perfil','message':'Mensagem'}[r.target_type] }}</span>
+            <span class="k-pill">{{ dict(report_reasons).get(r.reason, r.reason) }}</span>
+            <span class="k-muted">{{ r.created_at|pz_time('ago') }}</span>
+        </div>
+        {% if r.snapshot %}<blockquote class="k-quote">{{ r.snapshot }}</blockquote>{% endif %}
+        {% if r.details %}<p class="k-hint">“{{ r.details }}”</p>{% endif %}
+        <p class="k-muted">
+            Denunciado por @{{ r.reporter_username }}
+            {% if r.target_username %}· autor @{{ r.target_username }}{% endif %}
+            {% if r.target_type == 'post' %}· <a href="{{ url_for('post_detail', post_id=r.target_id) }}">ver publicação</a>{% endif %}
+            {% if r.target_type == 'user' and r.target_username %}· <a href="{{ url_for('profile', username=r.target_username) }}">ver perfil</a>{% endif %}
+        </p>
+        {% if closed %}
+        <p class="k-muted">Resolução: {{ r.resolution }}</p>
+        {% else %}
+        <form method="POST" action="{{ url_for('extras.admin_resolve_report', report_id=r.id) }}" class="k-actions">
+            <button class="k-btn k-btn--small" name="action" value="dismiss">Dispensar</button>
+            {% if r.target_type != 'user' %}
+            <button class="k-btn k-btn--small k-btn--danger" name="action" value="remove"
+                    onclick="return confirm('Remover este conteúdo?')">Remover conteúdo</button>
+            {% endif %}
+            {% if r.target_user_id %}
+            <button class="k-btn k-btn--small k-btn--danger" name="action" value="ban"
+                    onclick="return confirm('Banir o autor?')">Banir autor</button>
+            {% endif %}
+        </form>
+        {% endif %}
+    </article>
+    {% else %}
+    <div class="k-empty"><div class="k-empty__icon">✓</div><h2>Nada por aqui</h2><p>Nenhuma denúncia {{ 'resolvida' if closed else 'aberta' }}.</p></div>
+    {% endfor %}
+
+    {% elif tab == 'users' %}
+    {% for person in users %}
+    <div class="k-row k-row--wrap">
+        {{ avatar(person.profile_photo, person.name, 'sm') }}
+        <div class="k-row__main">
+            <a href="{{ url_for('profile', username=person.username) }}"><strong>{{ person.name }}</strong></a>
+            {% if person.verified %}<span class="k-verified">✓</span>{% endif %}
+            <span class="k-muted">@{{ person.username }} · {{ person.email }}</span>
+            <span class="k-muted">{{ person.posts }} publicações · desde {{ person.created_at|pz_time('full') }}</span>
+            <div>
+                {% if person.banned_at %}<span class="k-pill k-pill--bad">banido</span>{% endif %}
+                {% if not person.email_verified %}<span class="k-pill k-pill--warn">e-mail pendente</span>{% endif %}
+            </div>
+        </div>
+        {% if person.username.lower() not in admins %}
+        <div class="k-actions">
+            {% if person.banned_at %}
+            <form method="POST" action="{{ url_for('extras.admin_unban', user_id=person.id) }}">
+                <input type="hidden" name="next" value="{{ here }}">
+                <button class="k-btn k-btn--small">Desbanir</button></form>
+            {% else %}
+            <form method="POST" action="{{ url_for('extras.admin_ban', user_id=person.id) }}"
+                  onsubmit="var r=prompt('Motivo do banimento (opcional):'); if(r===null) return false; this.reason.value=r; return true">
+                <input type="hidden" name="reason"><input type="hidden" name="next" value="{{ here }}">
+                <button class="k-btn k-btn--small">Banir</button></form>
+            {% endif %}
+            <form method="POST" action="{{ url_for('extras.admin_delete_user', user_id=person.id) }}"
+                  onsubmit="return confirm('Excluir @{{ person.username }} e TODO o conteúdo dessa conta?')">
+                <input type="hidden" name="next" value="{{ here }}">
+                <button class="k-btn k-btn--small k-btn--danger">Excluir</button></form>
+        </div>
+        {% endif %}
+    </div>
+    {% else %}
+    <p class="k-muted">Nenhuma conta encontrada.</p>
+    {% endfor %}
+
+    {% elif tab == 'posts' %}
+    {% for p in posts %}
+    <div class="k-row k-row--wrap">
+        <div class="k-row__main">
+            <span class="k-muted">@{{ p.username }} · {{ p.created_at|pz_time('ago') }}</span>
+            <a href="{{ url_for('post_detail', post_id=p.id) }}">{{ (p.content or '[somente imagem]')[:160] }}</a>
+        </div>
+        <form method="POST" action="{{ url_for('extras.delete_post', post_id=p.id) }}"
+              onsubmit="return confirm('Apagar esta publicação?')">
+            <input type="hidden" name="next" value="{{ here }}">
+            <button class="k-btn k-btn--small k-btn--danger">Apagar</button></form>
+    </div>
+    {% else %}
+    <p class="k-muted">Nenhuma publicação encontrada.</p>
+    {% endfor %}
+
+    {% elif tab == 'log' %}
+    {% for l in log %}
+    <div class="k-row k-row--wrap">
+        <div class="k-row__main">
+            <strong>{{ l.action }}</strong>
+            <span class="k-muted">por @{{ l.admin_username or '—' }} · {{ l.created_at|pz_time('full') }}</span>
+            {% if l.details %}<span class="k-muted">{{ l.details }}</span>{% endif %}
+        </div>
+    </div>
+    {% else %}
+    <p class="k-muted">Nenhuma ação registrada ainda.</p>
+    {% endfor %}
+    {% endif %}
+
+    {% if tab in ('users', 'posts') and (page > 1 or has_next) %}
+    <div class="k-pager">
+        {% if page > 1 %}<a class="k-btn k-btn--small" href="{{ url_for('extras.admin', tab=tab, q=q, page=page-1) }}">← Anterior</a>{% endif %}
+        {% if has_next %}<a class="k-btn k-btn--small" href="{{ url_for('extras.admin', tab=tab, q=q, page=page+1) }}">Próxima →</a>{% endif %}
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

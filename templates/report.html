@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Denunciar — K{% endblock %}
+{% set labels = {'post': 'esta publicação', 'comment': 'este comentário', 'user': 'este perfil', 'message': 'esta mensagem'} %}
+{% block content %}
+<div class="k-page k-page--narrow">
+    <a class="k-back" href="{{ next_url if next_url.startswith('/') and not next_url.startswith('//') else url_for('home') }}">← Cancelar</a>
+    <form method="POST" class="k-card">
+        <input type="hidden" name="next" value="{{ next_url }}">
+        <h2>Denunciar {{ labels.get(kind, 'conteúdo') }}</h2>
+        <p class="k-hint">Sua denúncia é anônima para a outra pessoa. Só a equipe do K vai analisar.</p>
+
+        {% if snapshot %}<blockquote class="k-quote">{{ snapshot }}</blockquote>{% endif %}
+
+        <div class="k-choices">
+            {% for value, label in report_reasons %}
+            <label class="k-choice">
+                <input type="radio" name="reason" value="{{ value }}" required>
+                <span>{{ label }}</span>
+            </label>
+            {% endfor %}
+        </div>
+
+        <div class="k-field" style="margin-top:14px">
+            <label for="details">Detalhes (opcional)</label>
+            <textarea id="details" name="details" rows="3" maxlength="500" placeholder="Conte o que aconteceu."></textarea>
+        </div>
+        <button type="submit" class="k-btn k-btn--primary">Enviar denúncia</button>
+    </form>
+</div>
+{% endblock %}

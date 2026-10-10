@@ -1,121 +1,53 @@
 {% extends "base.html" %}
-
 {% block title %}Criar conta — K{% endblock %}
-
 {% block content %}
-
-<div class="auth-page">
-
-    <div class="auth-card register-card">
-
-        <div class="auth-logo">Z</div>
-
+<div class="k-auth">
+    <div class="k-auth__card">
+        <a class="k-auth__logo" href="{{ url_for('welcome') }}" aria-label="K">K</a>
         <h1>Criar sua conta</h1>
+        <p class="k-hint">Leva menos de um minuto.</p>
 
-        <p class="auth-subtitle">
-            Entre para o K.
-        </p>
-
-        <form method="POST"
-              class="auth-form"
-              enctype="multipart/form-data">
-
-            <label>
-                Nome
-            </label>
-
-            <input
-                type="text"
-                name="name"
-                placeholder="Como você quer ser chamado?"
-                maxlength="80"
-                required
-            >
-
-            <label>
-                Nome de usuário
-            </label>
-
-            <div class="username-input">
-
-                <span>@</span>
-
-                <input
-                    type="text"
-                    name="username"
-                    placeholder="usuario"
-                    maxlength="30"
-                    pattern="[A-Za-z0-9_.]+"
-                    required
-                >
-
+        <form method="POST" class="k-form">
+            <div class="k-field">
+                <label for="name">Nome</label>
+                <input id="name" type="text" name="name" placeholder="Como você quer ser chamado?" maxlength="80" required autocomplete="name">
             </div>
 
-            <label>
-                Data de nascimento
-            </label>
-
-            <input
-                type="date"
-                name="birth_date"
-                required
-            >
-
-            <label>
-                E-mail
-            </label>
-
-            <input
-                type="email"
-                name="email"
-                placeholder="seu@email.com"
-                autocomplete="email"
-                required
-            >
-
-            <label>
-                Senha
-            </label>
-
-            <div class="password-field">
-
-                <input
-                    type="password"
-                    name="password"
-                    id="register-password"
-                    placeholder="Crie uma senha"
-                    minlength="6"
-                    autocomplete="new-password"
-                    required
-                >
-
-                <button
-                    type="button"
-                    onclick="togglePassword('register-password', this)">
-                    Mostrar
-                </button>
-
+            <div class="k-field">
+                <label for="username">Nome de usuário</label>
+                <div class="k-prefixed"><span>@</span>
+                    <input id="username" type="text" name="username" placeholder="seu_usuario" minlength="3" maxlength="30"
+                           pattern="[A-Za-z0-9_]+" autocomplete="username" autocapitalize="none" required>
+                </div>
+                <small class="k-hint">Letras, números e _ (mínimo 3).</small>
             </div>
 
-            <button type="submit"
-                    class="button button-primary button-full">
-                Criar conta
-            </button>
+            <div class="k-field">
+                <label for="birth_date">Data de nascimento</label>
+                <input id="birth_date" type="date" name="birth_date" required autocomplete="bday">
+                <small class="k-hint">É preciso ter 13 anos ou mais.</small>
+            </div>
 
+            <div class="k-field">
+                <label for="email">E-mail</label>
+                <input id="email" type="email" name="email" placeholder="voce@exemplo.com" autocomplete="email" required>
+                {% if mail_on %}<small class="k-hint">Enviaremos um link para confirmar. Use um e-mail que você acessa.</small>{% endif %}
+            </div>
+
+            <div class="k-field">
+                <label for="reg-password">Senha</label>
+                <div class="k-password">
+                    <input id="reg-password" type="password" name="password" placeholder="Mínimo de 8 caracteres"
+                           minlength="8" autocomplete="new-password" required>
+                    <button type="button" onclick="kTogglePassword('reg-password', this)">Mostrar</button>
+                </div>
+            </div>
+
+            <p class="k-hint">Ao criar a conta você concorda com os <a href="{{ url_for('extras.terms') }}" target="_blank">Termos</a> e a <a href="{{ url_for('extras.privacy') }}" target="_blank">Privacidade</a>.</p>
+            <button type="submit" class="k-btn k-btn--primary k-btn--block">Criar conta</button>
         </form>
 
-        <div class="auth-footer">
-
-            <span>Já possui uma conta?</span>
-
-            <a href="{{ url_for('login') }}">
-                Entrar
-            </a>
-
-        </div>
-
+        <p class="k-auth__foot">Já tem conta? <a href="{{ url_for('login') }}">Entrar</a></p>
     </div>
-
 </div>
-
 {% endblock %}

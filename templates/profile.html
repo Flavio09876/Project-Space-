@@ -63,6 +63,10 @@
                         Editar perfil
                     </a>
 
+                    <a href="{{ url_for('extras.settings') }}" class="z-profile-button secondary">
+                        Configurações
+                    </a>
+
                 {% else %}
 
                     <button
@@ -85,6 +89,22 @@
                     >
                         Mensagem
                     </a>
+
+                    <details class="k-menu">
+                        <summary aria-label="Mais opções">⋯</summary>
+                        <div class="k-menu__panel">
+                            <form method="POST" action="{{ url_for('extras.block_user', username=profile.username) }}"
+                                  onsubmit="return confirm('{{ 'Desbloquear' if i_blocked else 'Bloquear' }} @{{ profile.username }}?')">
+                                <input type="hidden" name="action" value="{{ 'unblock' if i_blocked else 'block' }}">
+                                <input type="hidden" name="next" value="{{ request.path }}">
+                                <button type="submit">{{ 'Desbloquear' if i_blocked else 'Bloquear' }} @{{ profile.username }}</button>
+                            </form>
+                            <a href="{{ url_for('extras.report', kind='user', target_id=profile.id, next=request.path) }}">Denunciar perfil</a>
+                            {% if is_admin %}
+                            <a href="{{ url_for('extras.admin', tab='users', q=profile.username) }}">Gerenciar no painel</a>
+                            {% endif %}
+                        </div>
+                    </details>
 
                 {% endif %}
 

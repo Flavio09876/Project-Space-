@@ -18,7 +18,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/k-ui.css') }}">
 </head>
 
-<body>
+<body class="{% block body_class %}{% endblock %}">
 
 <div class="app-shell">
 
@@ -89,6 +89,16 @@
                     Editar perfil
                 </a>
 
+                <a href="{{ url_for('extras.settings') }}">
+                    Configurações
+                </a>
+
+                {% if is_admin %}
+                <a href="{{ url_for('extras.admin') }}">
+                    Painel admin{% if open_reports %} ({{ open_reports }}){% endif %}
+                </a>
+                {% endif %}
+
                 <a href="{{ url_for('logout') }}" class="danger-link">
                     Sair
                 </a>
@@ -103,6 +113,15 @@
 
 
     <main class="main-content">
+
+        {% if email_unverified %}
+        <div class="k-banner" role="status">
+            <span>Confirme seu e-mail para publicar, comentar e enviar mensagens.</span>
+            <form method="POST" action="{{ url_for('extras.resend_verification') }}">
+                <button type="submit">Reenviar link</button>
+            </form>
+        </div>
+        {% endif %}
 
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
@@ -171,6 +190,18 @@
 
 <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 <script>
+    function kTogglePassword(id, button) {
+        var input = document.getElementById(id);
+        if (!input) return;
+        var show = input.type === "password";
+        input.type = show ? "text" : "password";
+        button.textContent = show ? "Ocultar" : "Mostrar";
+    }
+    document.addEventListener("click", function (event) {
+        document.querySelectorAll(".k-menu[open]").forEach(function (menu) {
+            if (!menu.contains(event.target)) menu.removeAttribute("open");
+        });
+    });
     if ("serviceWorker" in navigator) {
         window.addEventListener("load", function () {
             navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch(function () {});

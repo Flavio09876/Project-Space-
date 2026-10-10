@@ -10,6 +10,39 @@
 {%- endmacro %}
 
 
+
+{% macro post_menu(post, username) %}
+{% set mine = current_user and current_user.id == post.author_id %}
+<details class="k-menu">
+    <summary aria-label="Mais opções">⋯</summary>
+    <div class="k-menu__panel">
+        {% if mine %}
+            <a href="{{ url_for('extras.edit_post', post_id=post.id) }}">Editar</a>
+            <form method="POST" action="{{ url_for('extras.delete_post', post_id=post.id) }}"
+                  onsubmit="return confirm('Apagar esta publicação?')">
+                <input type="hidden" name="next" value="{{ request.path }}">
+                <button type="submit" class="danger">Apagar</button>
+            </form>
+        {% else %}
+            <a href="{{ url_for('extras.report', kind='post', target_id=post.id, next=request.path) }}">Denunciar</a>
+            <form method="POST" action="{{ url_for('extras.block_user', username=username) }}"
+                  onsubmit="return confirm('Bloquear @{{ username }}?')">
+                <input type="hidden" name="next" value="{{ request.path }}">
+                <button type="submit">Bloquear @{{ username }}</button>
+            </form>
+            {% if is_admin %}
+            <form method="POST" action="{{ url_for('extras.delete_post', post_id=post.id) }}"
+                  onsubmit="return confirm('Apagar esta publicação (admin)?')">
+                <input type="hidden" name="next" value="{{ request.path }}">
+                <button type="submit" class="danger">Apagar (admin)</button>
+            </form>
+            {% endif %}
+        {% endif %}
+    </div>
+</details>
+{% endmacro %}
+
+
 {% macro post_card(post, name, username, photo, verified, detail=False) %}
 <article class="k-post {% if detail %}k-post--detail{% endif %}">
 
@@ -23,9 +56,12 @@
                 <span class="k-post__meta">@{{ username }}</span>
             </span>
         </a>
-        <time class="k-post__time" title="{{ post.created_at|pz_time('full') }}">
-            {{ post.created_at|pz_time('full' if detail else 'ago') }}
-        </time>
+        <div class="k-post__side">
+            <time class="k-post__time" title="{{ post.created_at|pz_time('full') }}">
+                {{ post.created_at|pz_time('full' if detail else 'ago') }}{% if post.edited_at %} · editado{% endif %}
+            </time>
+            {{ post_menu(post, username) }}
+        </div>
     </header>
 
     {% if detail %}

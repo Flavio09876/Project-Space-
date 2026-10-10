@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Termos de uso' if page == 'termos' else 'Privacidade' }} — K{% endblock %}
+{% block content %}
+<div class="k-page k-page--narrow k-legal">
+    <a class="k-back" href="{{ url_for('home') if current_user else url_for('welcome') }}">← Voltar</a>
+    {% if page == 'termos' %}
+    <h1>Termos de uso</h1>
+    <p class="k-hint">Modelo inicial — revise antes de divulgar a plataforma ao público.</p>
+    <h2>1. Quem pode usar</h2>
+    <p>O K é para pessoas com 13 anos ou mais. Você é responsável pela sua conta e pela sua senha.</p>
+    <h2>2. Conduta</h2>
+    <p>Não é permitido assediar, ameaçar, expor dados de terceiros, publicar conteúdo sexual envolvendo menores, golpes, spam ou conteúdo ilegal. Você pode denunciar qualquer conteúdo pelo menu “⋯”.</p>
+    <h2>3. Seu conteúdo</h2>
+    <p>O que você publica continua sendo seu. Você nos autoriza a exibi-lo na plataforma. Você pode editar ou apagar suas publicações, comentários e mensagens, e excluir sua conta a qualquer momento em Configurações.</p>
+    <h2>4. Moderação</h2>
+    <p>A equipe pode remover conteúdo e suspender ou excluir contas que violem estes termos.</p>
+    <h2>5. Mudanças</h2>
+    <p>Estes termos podem mudar. Avisaremos sobre mudanças importantes.</p>
+    {% else %}
+    <h1>Privacidade</h1>
+    <p class="k-hint">Modelo inicial — revise antes de divulgar a plataforma ao público.</p>
+    <h2>O que guardamos</h2>
+    <p>Nome, @usuário, e-mail, data de nascimento, senha (somente em forma criptografada), suas publicações, comentários, mensagens, seguidores e bloqueios.</p>
+    <h2>Para que usamos</h2>
+    <p>Para fazer a plataforma funcionar, enviar o e-mail de confirmação e manter a segurança. Não vendemos seus dados.</p>
+    <h2>Mensagens</h2>
+    <p>Mensagens privadas só são vistas pela equipe quando alguém as denuncia.</p>
+    <h2>Seus direitos</h2>
+    <p>Você pode corrigir seus dados em Editar perfil e Configurações e excluir sua conta, o que apaga seu perfil, publicações, comentários e mensagens.</p>
+    {% endif %}
+</div>
+{% endblock %}

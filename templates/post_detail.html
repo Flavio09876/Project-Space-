@@ -28,10 +28,26 @@
                 </a>
                 <div class="k-comment__main">
                     <div class="k-comment__head">
+                        <details class="k-menu k-menu--right">
+                            <summary aria-label="Mais opções">⋯</summary>
+                            <div class="k-menu__panel">
+                                {% if current_user.id == comment.user_id %}
+                                    <a href="{{ url_for('extras.edit_comment', comment_id=comment.id) }}">Editar</a>
+                                {% else %}
+                                    <a href="{{ url_for('extras.report', kind='comment', target_id=comment.id, next=request.path) }}">Denunciar</a>
+                                {% endif %}
+                                {% if current_user.id == comment.user_id or current_user.id == post.author_id or is_admin %}
+                                <form method="POST" action="{{ url_for('extras.delete_comment', comment_id=comment.id) }}"
+                                      onsubmit="return confirm('Apagar este comentário?')">
+                                    <button type="submit" class="danger">Apagar</button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </details>
                         <a class="k-comment__name" href="{{ url_for('profile', username=comment.username) }}">
                             {{ comment.name }}{% if comment.verified %}<span class="k-verified">✓</span>{% endif %}
                         </a>
-                        <span class="k-comment__meta">@{{ comment.username }} · {{ comment.created_at|pz_time('ago') }}</span>
+                        <span class="k-comment__meta">@{{ comment.username }} · {{ comment.created_at|pz_time('ago') }}{% if comment.edited_at %} · editado{% endif %}</span>
                     </div>
                     <p class="k-comment__text">{{ comment.content }}</p>
                 </div>

@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% from "_components.html" import avatar with context %}
+{% block title %}Configurações — K{% endblock %}
+{% block content %}
+<div class="k-page k-page--narrow">
+
+    <header class="k-pagehead">
+        <div>
+            <span class="k-eyebrow">Sua conta</span>
+            <h1>Configurações</h1>
+        </div>
+    </header>
+
+    <nav class="k-chips" aria-label="Seções">
+        <a href="#conta">Conta</a>
+        <a href="#privacidade">Bloqueados</a>
+        <a href="#ajuda">Ajuda</a>
+        <a href="#perigo">Zona de perigo</a>
+    </nav>
+
+    <section class="k-card" id="perfil">
+        <h2>Perfil</h2>
+        <p class="k-hint">Nome, foto, capa, bio e status.</p>
+        <a class="k-btn" href="{{ url_for('edit_profile') }}">Editar perfil</a>
+    </section>
+
+    <section class="k-card" id="conta">
+        <h2>Conta</h2>
+        <p class="k-hint">
+            @{{ account.username }} · {{ account.email }}
+            {% if mail_on %}
+                {% if account.email_verified %}<span class="k-pill k-pill--ok">e-mail confirmado</span>
+                {% else %}<span class="k-pill k-pill--warn">e-mail não confirmado</span>{% endif %}
+            {% endif %}
+        </p>
+
+        {% if account.pending_email %}
+        <p class="k-hint">Aguardando confirmação de <strong>{{ account.pending_email }}</strong>.</p>
+        {% endif %}
+
+        {% if mail_on and (not account.email_verified or account.pending_email) %}
+        <form method="POST" action="{{ url_for('extras.resend_verification') }}" style="margin-bottom:16px">
+            <button class="k-btn" type="submit">Reenviar e-mail de confirmação</button>
+        </form>
+        {% endif %}
+
+        <form method="POST" action="{{ url_for('extras.change_email') }}" class="k-form">
+            <h3>Alterar e-mail</h3>
+            <div class="k-field"><label for="em">Novo e-mail</label>
+                <input id="em" type="email" name="email" required autocomplete="email"></div>
+            <div class="k-field"><label for="empw">Sua senha</label>
+                <input id="empw" type="password" name="password" required autocomplete="current-password"></div>
+            <button class="k-btn k-btn--primary" type="submit">Alterar e-mail</button>
+        </form>
+
+        <hr class="k-sep">
+
+        <form method="POST" action="{{ url_for('extras.change_password') }}" class="k-form">
+            <h3>Alterar senha</h3>
+            <div class="k-field"><label for="cp">Senha atual</label>
+                <input id="cp" type="password" name="current_password" required autocomplete="current-password"></div>
+            <div class="k-field"><label for="np">Nova senha</label>
+                <input id="np" type="password" name="new_password" required minlength="8" autocomplete="new-password">
+                <small class="k-hint">Mínimo de 8 caracteres.</small></div>
+            <div class="k-field"><label for="cf">Confirmar nova senha</label>
+                <input id="cf" type="password" name="confirm_password" required minlength="8" autocomplete="new-password"></div>
+            <button class="k-btn k-btn--primary" type="submit">Alterar senha</button>
+        </form>
+    </section>
+
+    <section class="k-card" id="privacidade">
+        <h2>Usuários bloqueados</h2>
+        <p class="k-hint">Quem você bloqueia não vê seu perfil, não te manda mensagem e some do seu feed.</p>
+        {% for person in blocked %}
+        <div class="k-row">
+            {{ avatar(person.profile_photo, person.name, 'sm') }}
+            <div class="k-row__main">
+                <strong>{{ person.name }}</strong>
+                <span class="k-muted">@{{ person.username }}</span>
+            </div>
+            <form method="POST" action="{{ url_for('extras.block_user', username=person.username) }}">
+                <input type="hidden" name="action" value="unblock">
+                <input type="hidden" name="next" value="/settings#privacidade">
+                <button class="k-btn k-btn--small" type="submit">Desbloquear</button>
+            </form>
+        </div>
+        {% else %}
+        <p class="k-muted">Você não bloqueou ninguém.</p>
+        {% endfor %}
+    </section>
+
+    <section class="k-card" id="ajuda">
+        <h2>Ajuda e informações</h2>
+        <div class="k-links">
+            <a href="{{ url_for('extras.terms') }}">Termos de uso</a>
+            <a href="{{ url_for('extras.privacy') }}">Privacidade</a>
+            <a href="{{ url_for('logout') }}">Sair da conta</a>
+        </div>
+        <p class="k-hint" style="margin-top:12px">Para denunciar algo, use o menu “⋯” na publicação, comentário, mensagem ou perfil.</p>
+    </section>
+
+    <section class="k-card k-danger-zone" id="perigo">
+        <h2>Excluir conta</h2>
+        <p class="k-hint">Apaga para sempre seu perfil, publicações, comentários, mensagens e seguidores. Não dá para desfazer.</p>
+        {% if is_admin %}
+        <p class="k-muted">A conta administradora não pode ser excluída por aqui.</p>
+        {% else %}
+        <form method="POST" action="{{ url_for('extras.delete_account') }}" class="k-form"
+              onsubmit="return confirm('Excluir sua conta definitivamente?')">
+            <div class="k-field"><label for="dp">Sua senha</label>
+                <input id="dp" type="password" name="password" required autocomplete="current-password"></div>
+            <div class="k-field"><label for="du">Digite seu @ para confirmar ({{ account.username }})</label>
+                <input id="du" type="text" name="confirm_username" required autocomplete="off"></div>
+            <button class="k-btn k-btn--danger" type="submit">Excluir minha conta</button>
+        </form>
+        {% endif %}
+    </section>
+
+</div>
+{% endblock %}

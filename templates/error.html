@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} — K{% endblock %}
+{% block content %}
+<div class="k-page k-page--narrow">
+    <div class="k-empty">
+        <div class="k-empty__icon">!</div>
+        <h2>{{ title }}</h2>
+        <p>{{ message }}</p>
+        <a href="{{ url_for('home') if current_user else url_for('welcome') }}" class="k-btn k-btn--primary">Voltar ao início</a>
+    </div>
+</div>
+{% endblock %}

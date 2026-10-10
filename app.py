@@ -323,7 +323,7 @@ def get_current_user():
     if not user_id:
         return None
 
-    return query_one(
+    row = query_one(
         """
         SELECT *
         FROM users
@@ -331,6 +331,12 @@ def get_current_user():
         """,
         (user_id,),
     )
+
+    if row and row.get("banned_at"):
+        session.clear()
+        return None
+
+    return row
 
 
 def login_required(function):
@@ -404,6 +410,9 @@ def pz_time(value, mode="ago"):
 
     if mode == "full":
         return f"{day_month} {moment.year} · {clock}"
+
+    if mode == "clock":
+        return clock
 
     if mode == "short":
         if days == 0:
@@ -796,10 +805,10 @@ def register():
             )
 
 
-        if len(password) < 6:
+        if len(password) < 8:
 
             flash(
-                "A senha precisa ter pelo menos 6 caracteres.",
+                "A senha precisa ter pelo menos 8 caracteres.",
                 "error",
             )
 
@@ -823,6 +832,11 @@ def register():
                 "register.html"
             )
 
+
+        problem = extras.validate_registration(username, email, birth_date)
+        if problem:
+            flash(problem, "error")
+            return render_template("register.html")
 
         exists = query_one(
             """
@@ -887,6 +901,8 @@ def register():
             ),
         )
 
+
+        extras.after_register(user_id, email)
 
         session.clear()
 
@@ -1023,6 +1039,10 @@ def login():
         )
 
 
+        if user.get("banned_at"):
+            flash("Esta conta foi suspensa.", "error")
+            return render_template("login.html")
+
         session.clear()
 
         session["user_id"] = user["id"]
@@ -1105,23 +1125,28 @@ def home():
           ON u.id = p.author_id
 
         WHERE
-            p.author_id = %s
-
-            OR p.author_id IN (
-
-                SELECT following_id
-
-                FROM follows
-
-                WHERE follower_id = %s
+            (
+                p.author_id = %s
+                OR p.author_id IN (
+                    SELECT following_id
+                    FROM follows
+                    WHERE follower_id = %s
+                )
             )
-
+            AND p.author_id NOT IN (
+                SELECT blocked_id FROM blocks WHERE blocker_id = %s
+            )
+            AND p.author_id NOT IN (
+                SELECT blocker_id FROM blocks WHERE blocked_id = %s
+            )
         ORDER BY
             p.id DESC
-
         LIMIT 50
         """,
         (
+            user["id"],
+            user["id"],
+            user["id"],
             user["id"],
             user["id"],
             user["id"],
@@ -1366,7 +1391,7 @@ def post_detail(post_id):
         return "Publicação não encontrada.", 404
 
     if request.method == "POST":
-        content = request.form.get("content", "").strip()
+        content = request.form.get("content", "").strip()[:2000]
         if content:
             execute(
                 "INSERT INTO comments (post_id, user_id, content) VALUES (%s, %s, %s)",
@@ -1379,8 +1404,10 @@ def post_detail(post_id):
         FROM comments c
         JOIN users u ON u.id = c.user_id
         WHERE c.post_id = %s
+          AND c.user_id NOT IN (SELECT blocked_id FROM blocks WHERE blocker_id = %s)
+          AND c.user_id NOT IN (SELECT blocker_id FROM blocks WHERE blocked_id = %s)
         ORDER BY c.id ASC
-    """, (post_id,))
+    """, (post_id, user["id"], user["id"]))
 
     return render_template(
         "post_detail.html",
@@ -2855,6 +2882,11 @@ def too_large(error):
 # ============================================================
 
 init_database()
+
+import extras
+
+extras.install(app, globals())
+extras.migrate()
 
 
 # ============================================================

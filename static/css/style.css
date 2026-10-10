@@ -1833,24 +1833,6 @@ form label {
     overflow-wrap: anywhere;
 }
 
-.conversation-page {
-    display: flex;
-    flex-direction: column;
-    min-height: min(72vh, 820px);
-    overflow: hidden;
-    background: var(--k-surface);
-    border: 1px solid var(--k-border);
-    border-radius: var(--k-radius-lg);
-}
-
-.conversation-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 14px 16px;
-    border-bottom: 1px solid var(--k-border);
-}
-
 .back-button,
 .connections-back {
     display: inline-grid;
@@ -1862,101 +1844,6 @@ form label {
     background: var(--k-surface-raised);
     border: 1px solid var(--k-border);
     border-radius: 12px;
-}
-
-.message-list {
-    display: flex;
-    flex: 1;
-    flex-direction: column;
-    gap: 12px;
-    padding: 18px;
-    overflow-x: hidden;
-}
-
-.message-row {
-    display: flex;
-    align-items: flex-end;
-    gap: 8px;
-    max-width: 88%;
-    min-width: 0;
-}
-
-.message-row.mine {
-    align-self: flex-end;
-    flex-direction: row-reverse;
-}
-
-.message-row.theirs {
-    align-self: flex-start;
-}
-
-.message-avatar,
-.message-avatar-link {
-    flex-shrink: 0;
-}
-
-.message-bubble {
-    min-width: 0;
-    padding: 10px 13px;
-    overflow-wrap: anywhere;
-    background: var(--k-surface-raised);
-    border: 1px solid var(--k-border);
-    border-radius: 15px 15px 15px 4px;
-}
-
-.message-row.mine .message-bubble {
-    background: #40151b;
-    border-color: #68202a;
-    border-radius: 15px 15px 4px 15px;
-}
-
-.message-content {
-    white-space: pre-wrap;
-    overflow-wrap: anywhere;
-}
-
-.message-time {
-    display: block;
-    margin-top: 4px;
-    color: var(--k-muted);
-    font-size: 11px;
-    text-align: right;
-}
-
-.message-form {
-    display: flex;
-    align-items: flex-end;
-    gap: 9px;
-    padding: 12px;
-    background: var(--k-surface);
-    border-top: 1px solid var(--k-border);
-}
-
-.message-form textarea {
-    flex: 1;
-    min-width: 0;
-    max-height: 140px;
-    padding: 11px 13px;
-    resize: vertical;
-    color: var(--k-text);
-    background: var(--k-bg);
-    border: 1px solid var(--k-border);
-    border-radius: 14px;
-}
-
-.send-message-button,
-.attach-image-button,
-.attachment-remove {
-    display: inline-grid;
-    flex-shrink: 0;
-    min-width: 42px;
-    min-height: 42px;
-    place-items: center;
-    color: white;
-    background: var(--k-accent);
-    border: 0;
-    border-radius: 12px;
-    cursor: pointer;
 }
 
 .community-hero,
@@ -2124,22 +2011,13 @@ form label {
         height: 52px;
     }
 
-    .conversation-page {
-        min-height: calc(100dvh - 155px);
-        border-radius: 15px;
-    }
+    
 
-    .message-list {
-        padding: 12px 9px;
-    }
+    
 
-    .message-row {
-        max-width: 94%;
-    }
+    
 
-    .conversation-header {
-        padding: 10px;
-    }
+    
 
     .conversation-item,
     .connection-person {
@@ -2159,7 +2037,6 @@ form label {
         padding: 12px 9px;
     }
 }
-
 
 /* =========================================================
    K — OBSIDIAN RED  ·  camada estética (preto + vermelho)
@@ -2254,13 +2131,6 @@ input:focus, textarea:focus, select:focus, .composer-input:focus, .post-textarea
 .avatar, .avatar-small, .avatar-medium, .avatar-large, .avatar-xlarge,
 .post-avatar, .profile-avatar, .z-profile-avatar, .message-avatar {
     box-shadow: 0 0 0 2px var(--k-bg), 0 0 0 3px rgba(225, 29, 46, .55);
-}
-
-.message-row.own .message-bubble, .message-row.sent .message-bubble, .message-bubble.own, .message-bubble.sent {
-    background: linear-gradient(135deg, #e11d2e, #a40f1c);
-    border-color: transparent;
-    color: #fff;
-    box-shadow: 0 6px 20px rgba(225, 29, 46, .3);
 }
 
 .notification-dot, .z-status-dot { background: var(--k-accent); box-shadow: 0 0 10px var(--k-accent); }
