@@ -775,3 +775,37 @@ small.k-hint { margin: 0; font-size: 12.5px; }
 .brand-mark { overflow: hidden; background: none !important; }
 
 .k-tag{color:#ff5566;text-decoration:none;font-weight:600}.k-tag:hover{text-decoration:underline}
+
+/* ---------- Desktop: menu lateral + coluna "Em alta" ---------- */
+.k-side, .k-right { display: none; }
+@media (min-width: 1100px) {
+  .has-side .topbar { display: none !important; }
+  .mobile-navigation { display: none !important; }
+  .k-side {
+    display: flex; flex-direction: column; gap: 6px;
+    position: fixed; top: 0; left: 0; bottom: 0; width: 250px; padding: 22px 16px;
+    border-right: 1px solid #2a0c11; background: linear-gradient(180deg, #0c0c10, #070709);
+    overflow-y: auto; z-index: 40;
+  }
+  .k-side__brand { display: flex; align-items: center; gap: 12px; font-size: 26px; font-weight: 900; color: #fff; text-decoration: none; margin: 0 6px 16px; }
+  .k-side__brand img { border-radius: 12px; box-shadow: 0 6px 22px rgba(225,29,46,.45); }
+  .k-side__nav { display: flex; flex-direction: column; gap: 2px; }
+  .k-side__nav a { display: flex; justify-content: space-between; align-items: center; padding: 11px 14px; border-radius: 12px; color: #c9c9d1; text-decoration: none; font-weight: 600; font-size: 15px; }
+  .k-side__nav a:hover { background: #15151a; color: #fff; }
+  .k-side__nav a.on { background: rgba(225,29,46,.14); color: #fff; box-shadow: inset 3px 0 0 #e11d2e; }
+  .k-side__dot { font-style: normal; background: #e11d2e; color: #fff; border-radius: 999px; padding: 1px 8px; font-size: 12px; font-weight: 800; }
+  .k-side__post { margin-top: 14px; text-align: center; padding: 13px; border-radius: 14px; background: linear-gradient(145deg,#ff3444,#a40f1c); color: #fff; font-weight: 800; text-decoration: none; box-shadow: 0 8px 24px rgba(225,29,46,.4); }
+  .k-side__wallet { margin-top: auto; display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; padding: 14px; border-radius: 14px; background: #101014; border: 1px solid #2a0c11; text-decoration: none; color: #fff; font-size: 13px; }
+  .k-side__wallet span { opacity: .6; } .k-side__wallet b { text-align: right; }
+  .has-side .main-content { margin-left: 250px; }
+}
+@media (min-width: 1360px) {
+  .has-side .main-content { margin-right: 330px; }
+  .k-right { display: flex; flex-direction: column; gap: 14px; position: fixed; top: 0; right: 0; bottom: 0; width: 310px; padding: 22px 18px 22px 0; overflow-y: auto; }
+  .k-right__card { background: #0f0f13; border: 1px solid #2a0c11; border-radius: 18px; padding: 14px 16px; }
+  .k-right__card h3 { margin: 0 0 8px; font-size: 16px; }
+  .k-right__card a { display: flex; flex-direction: column; padding: 9px 0; color: #fff; text-decoration: none; font-weight: 700; border-top: 1px solid #1a1a20; }
+  .k-right__card a:first-of-type { border-top: 0; }
+  .k-right__card a:hover { color: #ff5566; }
+  .k-right__card small { opacity: .55; font-weight: 500; }
+}

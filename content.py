@@ -34,24 +34,31 @@ def _brt_today():
     return (datetime.utcnow() - timedelta(hours=3)).strftime("%Y-%m-%d")
 
 
-# chave: (título, descrição, recompensa, função de verificação)
-def _has(sql, uid):
+def _n(sql, uid):
     row = core.query_one(sql, (uid,))
-    return bool(row and row["n"])
+    return int(row["n"]) if row else 0
 
 
+# (chave, título, descrição, recompensa, contador(user), meta)
 TASKS = [
-    ("profile", "Completar o perfil", "Tenha foto, bio e capa.", 100,
-     lambda u: bool(u.get("profile_photo")) and bool((u.get("bio") or "").strip())
-     and bool(u.get("profile_header_value"))),
+    ("profile", "Completar o perfil", "Foto, bio e capa.", 100,
+     lambda u: sum(bool(x) for x in (u.get("profile_photo"), (u.get("bio") or "").strip(), u.get("profile_header_value"))), 3),
     ("first_post", "Primeira publicação", "Publique algo no K.", 50,
-     lambda u: _has("SELECT COUNT(*) AS n FROM posts WHERE author_id=%s", u["id"])),
+     lambda u: _n("SELECT COUNT(*) AS n FROM posts WHERE author_id=%s", u["id"]), 1),
     ("follow3", "Seguir 3 pessoas", "Encontre gente em Descobrir.", 50,
-     lambda u: core.query_one("SELECT COUNT(*) AS n FROM follows WHERE follower_id=%s", (u["id"],))["n"] >= 3),
+     lambda u: _n("SELECT COUNT(*) AS n FROM follows WHERE follower_id=%s", u["id"]), 3),
     ("first_comment", "Primeiro comentário", "Comente em uma publicação.", 30,
-     lambda u: _has("SELECT COUNT(*) AS n FROM comments WHERE user_id=%s", u["id"])),
+     lambda u: _n("SELECT COUNT(*) AS n FROM comments WHERE user_id=%s", u["id"]), 1),
     ("first_message", "Primeira mensagem", "Converse com alguém no chat.", 30,
-     lambda u: _has("SELECT COUNT(*) AS n FROM messages WHERE sender_id=%s", u["id"])),
+     lambda u: _n("SELECT COUNT(*) AS n FROM messages WHERE sender_id=%s", u["id"]), 1),
+    ("posts5", "Criador", "Publique 5 posts.", 100,
+     lambda u: _n("SELECT COUNT(*) AS n FROM posts WHERE author_id=%s", u["id"]), 5),
+    ("likes10", "Popular", "Receba 10 curtidas.", 100,
+     lambda u: _n("SELECT COUNT(*) AS n FROM post_likes l JOIN posts p ON p.id=l.post_id WHERE p.author_id=%s", u["id"]), 10),
+    ("followers10", "Influente", "Tenha 10 seguidores.", 150,
+     lambda u: _n("SELECT COUNT(*) AS n FROM follows WHERE following_id=%s", u["id"]), 10),
+    ("play3", "Jogador", "Jogue 3 rodadas no Gráfico K.", 40,
+     lambda u: _n("SELECT COUNT(*) AS n FROM casino_rounds WHERE user_id=%s", u["id"]), 3),
 ]
 DAILY = 20
 
@@ -60,7 +67,17 @@ def migrate():
     core.execute(
         "CREATE UNIQUE INDEX IF NOT EXISTS wallet_task_once ON wallet_ledger (user_id, note) WHERE kind = 'task'"
     )
-    core.execute("CREATE INDEX IF NOT EXISTS posts_created_idx ON posts (created_at DESC)")
+    for sql in (
+        "CREATE INDEX IF NOT EXISTS posts_created_idx ON posts (created_at DESC)",
+        "CREATE INDEX IF NOT EXISTS posts_author_idx ON posts (author_id, id DESC)",
+        "CREATE INDEX IF NOT EXISTS notif_user_idx ON notifications (user_id, is_read)",
+        "CREATE INDEX IF NOT EXISTS msgs_conv_idx ON messages (conversation_id, id DESC)",
+        "CREATE INDEX IF NOT EXISTS msgs_sender_idx ON messages (sender_id)",
+        "CREATE INDEX IF NOT EXISTS likes_post_idx ON post_likes (post_id)",
+        "CREATE INDEX IF NOT EXISTS follows_following_idx ON follows (following_id)",
+        "CREATE INDEX IF NOT EXISTS members_user_idx ON conversation_members (user_id)",
+    ):
+        core.execute(sql)
 
 
 def _claimed(uid):
@@ -98,7 +115,7 @@ def tarefas():
                 flash("Tarefa inválida.")
             elif key in done:
                 flash("Você já recebeu essa recompensa.")
-            elif not task[4](user):
+            elif task[4](user) < task[5]:
                 flash("Ainda não cumpriu essa tarefa.")
             else:
                 ok = _claim(user["id"], key, task[3])
@@ -106,16 +123,30 @@ def tarefas():
         return redirect(url_for("content.tarefas"))
 
     items = []
-    for key, title, desc, reward, check in TASKS:
+    for key, title, desc, reward, count, goal in TASKS:
         is_done = key in done
-        items.append(dict(key=key, title=title, desc=desc, reward=reward,
-                          done=is_done, ready=(not is_done) and bool(check(user))))
+        cur = min(count(user), goal)
+        items.append(dict(key=key, title=title, desc=desc, reward=reward, cur=cur, goal=goal,
+                          done=is_done, ready=(not is_done) and cur >= goal))
     items.insert(0, dict(key="daily", title="Presente diário", desc="Entre todo dia e pegue.",
-                         reward=DAILY, done=today_key in done, ready=today_key not in done))
+                         reward=DAILY, cur=0 if today_key not in done else 1, goal=1,
+                         done=today_key in done, ready=today_key not in done))
     return render_template("tasks.html", items=items)
 
 
+_trend_cache = {"t": 0, "v": []}
+
+
 def trending(limit=8):
+    import time
+    if time.time() - _trend_cache["t"] < 120:
+        return _trend_cache["v"][:limit]
+    _trend_cache["v"] = _compute_trending(20)
+    _trend_cache["t"] = time.time()
+    return _trend_cache["v"][:limit]
+
+
+def _compute_trending(limit=8):
     since = datetime.utcnow() - timedelta(days=7)
     rows = core.query_all("SELECT content FROM posts WHERE created_at >= %s AND content IS NOT NULL", (since,))
     c = Counter()

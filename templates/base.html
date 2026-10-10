@@ -20,7 +20,36 @@
 
 <body class="{% block body_class %}{% endblock %}">
 
-<div class="app-shell">
+<div class="app-shell{% if current_user %} has-side{% endif %}">
+
+    {% if current_user %}
+    <aside class="k-side" aria-label="Menu principal">
+        <a href="{{ url_for('home') }}" class="k-side__brand">
+            <img src="{{ url_for('static', filename='icons/k.svg') }}" alt="K" width="40" height="40">
+            <span>K</span>
+        </a>
+        <nav class="k-side__nav">
+            <a href="{{ url_for('home') }}" class="{{ 'on' if request.endpoint == 'home' }}">Início</a>
+            <a href="{{ url_for('discover') }}" class="{{ 'on' if request.endpoint == 'discover' }}">Descobrir</a>
+            <a href="{{ url_for('content.buscar') }}" class="{{ 'on' if request.endpoint == 'content.buscar' }}">Buscar</a>
+            <a href="{{ url_for('chat') }}" class="{{ 'on' if request.endpoint in ['chat','conversation'] }}">Mensagens</a>
+            <a href="{{ url_for('notifications') }}" class="{{ 'on' if request.endpoint == 'notifications' }}">Notificações{% if unread_notifications %}<i class="k-side__dot">{{ unread_notifications }}</i>{% endif %}</a>
+            <a href="{{ url_for('content.tarefas') }}" class="{{ 'on' if request.endpoint == 'content.tarefas' }}">Missões</a>
+            <a href="{{ url_for('casino.page') }}" class="{{ 'on' if request.endpoint and request.endpoint.startswith('casino') }}">Jogo do gráfico</a>
+            <a href="{{ url_for('wallet.carteira') }}" class="{{ 'on' if request.endpoint == 'wallet.carteira' }}">Carteira</a>
+            <a href="{{ url_for('profile', username=current_user.username) }}" class="{{ 'on' if request.endpoint == 'profile' }}">Perfil</a>
+            <a href="{{ url_for('extras.settings') }}">Configurações</a>
+            {% if is_admin %}<a href="{{ url_for('extras.admin') }}">Painel admin{% if open_reports %} ({{ open_reports }}){% endif %}</a>{% endif %}
+        </nav>
+        <a href="{{ url_for('create_post') }}" class="k-side__post">+ Publicar</a>
+        {% if wallet_me %}
+        <a href="{{ url_for('wallet.carteira') }}" class="k-side__wallet">
+            <span>kcoin</span><b>{{ wallet_me.kcoin }}</b>
+            <span>cristais</span><b>{{ wallet_me.crystals }}</b>
+        </a>
+        {% endif %}
+    </aside>
+    {% endif %}
 
     <header class="topbar">
 
@@ -164,6 +193,24 @@
         {% block content %}{% endblock %}
 
     </main>
+
+    {% if current_user %}
+    <aside class="k-right" aria-label="Em alta">
+        {% set tr = k_trending(6) %}
+        {% if tr %}
+        <section class="k-right__card">
+            <h3>Em alta</h3>
+            {% for tag, n in tr %}<a href="{{ url_for('content.buscar', q='#' + tag) }}">#{{ tag }}<small>{{ n }} post{{ 's' if n != 1 }}</small></a>{% endfor %}
+        </section>
+        {% endif %}
+        <section class="k-right__card">
+            <h3>Atalhos</h3>
+            <a href="{{ url_for('content.tarefas') }}">Missões diárias<small>ganhe kcoin</small></a>
+            <a href="{{ url_for('casino.page') }}">Gráfico K<small>4 rodadas grátis por dia</small></a>
+            <a href="{{ url_for('discover') }}">Encontrar pessoas<small>e comunidades</small></a>
+        </section>
+    </aside>
+    {% endif %}
 
 
     {% if current_user %}

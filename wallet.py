@@ -52,6 +52,9 @@ def ensure(user_id, bonus=True):
 
 
 def get_wallet(user_id):
+    row = core.query_one("SELECT kcoin, crystals FROM wallets WHERE user_id = %s", (user_id,))
+    if row:
+        return row
     ensure(user_id)
     return core.query_one("SELECT kcoin, crystals FROM wallets WHERE user_id = %s", (user_id,))
 

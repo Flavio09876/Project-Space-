@@ -9,6 +9,7 @@ from flask import (
     jsonify,
     abort,
     send_from_directory,
+    g,
 )
 from werkzeug.security import (
     generate_password_hash,
@@ -19,6 +20,7 @@ from werkzeug.utils import secure_filename
 from pathlib import Path
 from functools import wraps
 import os
+import threading
 import psycopg
 from psycopg.rows import dict_row
 import secrets
@@ -51,6 +53,8 @@ for directory in (
 
 app = Flask(__name__)
 
+app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 3600
+
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY") or (
     "project-z-local-" + secrets.token_hex(16)
 )
@@ -77,27 +81,49 @@ ALLOWED_IMAGES = {
 # ============================================================
 
 
-def get_db():
-    """Abre uma conexão PostgreSQL com o Supabase."""
+_pool = None
+_pool_lock = threading.Lock()
+
+
+def _conninfo():
     database_url = os.environ.get("DATABASE_URL")
-
     if database_url:
-        return psycopg.connect(database_url, row_factory=dict_row)
-
+        return database_url
     password = os.environ.get("SUPABASE_DB_PASSWORD")
     if not password:
-        raise RuntimeError(
-            "Defina DATABASE_URL ou SUPABASE_DB_PASSWORD."
-        )
-
-    return psycopg.connect(
-        host="aws-0-us-east-1.pooler.supabase.com",
-        port=5432,
-        dbname="postgres",
-        user="postgres.daulnliocuulnfitqqsv",
-        password=password,
-        row_factory=dict_row,
+        raise RuntimeError("Defina DATABASE_URL ou SUPABASE_DB_PASSWORD.")
+    from psycopg.conninfo import make_conninfo
+    return make_conninfo(
+        host="aws-0-us-east-1.pooler.supabase.com", port=5432, dbname="postgres",
+        user="postgres.daulnliocuulnfitqqsv", password=password,
     )
+
+
+def _connect():
+    """Conexão avulsa (sem pool)."""
+    return psycopg.connect(_conninfo(), row_factory=dict_row)
+
+
+def get_db():
+    """Conexão do pool (reaproveitada entre requisições). `with get_db() as db:` devolve ao pool."""
+    global _pool
+    try:
+        from psycopg_pool import ConnectionPool
+    except ImportError:
+        return _connect()
+    if _pool is None:
+        with _pool_lock:
+            if _pool is None:
+                _pool = ConnectionPool(
+                    _conninfo(),
+                    min_size=1,
+                    max_size=int(os.environ.get("DB_POOL_MAX", "5")),
+                    kwargs={"row_factory": dict_row, "prepare_threshold": None},
+                    check=ConnectionPool.check_connection,
+                    max_idle=240,
+                    open=True,
+                )
+    return _pool.connection()
 
 
 def query_one(sql, parameters=()):
@@ -321,6 +347,10 @@ def get_current_user():
     if not user_id:
         return None
 
+    cached = getattr(g, "_current_user", None)
+    if cached is not None and cached[0] == user_id:
+        return cached[1]
+
     row = query_one(
         """
         SELECT *
@@ -334,6 +364,7 @@ def get_current_user():
         session.clear()
         return None
 
+    g._current_user = (user_id, row)
     return row
 
 
@@ -2863,21 +2894,28 @@ def too_large(error):
 # INITIALIZE
 # ============================================================
 
-init_database()
+_startup_lock = _connect()
+_startup_lock.autocommit = True
+_startup_lock.execute("SELECT pg_advisory_lock(727272)")
+try:
+    init_database()
 
-import extras
+    import extras
 
-extras.install(app, globals())
-extras.migrate()
-import wallet
-wallet.install(app, globals())
-wallet.migrate()
-import casino
-casino.install(app, globals())
-casino.migrate()
-import content
-content.install(app, globals())
-content.migrate()
+    extras.install(app, globals())
+    extras.migrate()
+    import wallet
+    wallet.install(app, globals())
+    wallet.migrate()
+    import casino
+    casino.install(app, globals())
+    casino.migrate()
+    import content
+    content.install(app, globals())
+    content.migrate()
+finally:
+    _startup_lock.close()   # libera a trava
+
 
 
 # ============================================================
