@@ -1,3 +1,7 @@
+{% macro role_tag(username) -%}
+{%- if username == 'eozffprivacy' %}<span class="k-rtag k-rtag--admin" title="Administração">★ ADM</span>
+{%- elif username == 'staffmoderator' %}<span class="k-rtag k-rtag--mod" title="Moderação">◆ MOD</span>{% endif -%}
+{%- endmacro %}
 {# Componentes compartilhados do K. Importe com: {% from "_components.html" import ... with context %} #}
 
 {% macro avatar(photo, name, size='md') -%}
@@ -51,7 +55,7 @@
             {{ avatar(photo, name, 'md') }}
             <span class="k-post__who">
                 <span class="k-post__name">
-                    <span class="k-post__nametext">{{ name }}</span>{% if verified %}<span class="k-verified" title="Conta verificada">✓</span>{% endif %}
+                    <span class="k-post__nametext">{{ name }}</span>{% if verified %}<span class="k-verified" title="Conta verificada">✓</span>{% endif %}{{ role_tag(username) }}
                 </span>
                 <span class="k-post__meta">@{{ username }}</span>
             </span>

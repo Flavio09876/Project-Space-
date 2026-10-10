@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_components.html" import avatar, post_card with context %}
+{% from "_components.html" import avatar, post_card, role_tag with context %}
 
 {% set profile = profile if profile is defined else user %}
 
@@ -131,6 +131,7 @@
                         ✓
                     </span>
                 {% endif %}
+                {{ role_tag(profile.username) }}
 
             </div>
 

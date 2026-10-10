@@ -859,3 +859,9 @@ html, body { overflow-x: hidden; }
 .k-frame--5::before { inset: 0; background: conic-gradient(from 90deg, #5a0610, #ff2d40, #ff8a95, #ff2d40, #5a0610); animation: kf-spin 4s linear infinite reverse; }
 .k-frame--5::after { inset: calc(var(--fw) * -1.6); background: radial-gradient(circle at 50% 0, #fff 0 3px, #ff8a95 4px, transparent 7px); animation: kf-spin 2.2s linear infinite; }
 @media (prefers-reduced-motion: reduce) { .k-frame::before, .k-frame::after { animation: none !important; } }
+
+/* ---------- Tag de cargo (estilo tag de servidor) ---------- */
+.k-rtag { display: inline-flex; align-items: center; flex: none; margin-left: 6px; padding: 2px 7px; border-radius: 6px; font-size: 11px; font-weight: 800; letter-spacing: .06em; line-height: 1.3; vertical-align: middle; border: 1px solid transparent; white-space: nowrap; }
+.k-rtag--admin { color: #fff; background: linear-gradient(145deg, #ff3444, #8f0a16); border-color: #ff8a95; box-shadow: 0 0 10px rgba(225,29,46,.5); }
+.k-rtag--mod { color: #ffd0d5; background: #1d0a0e; border-color: #7a1a24; }
+.z-profile-name-row { flex-wrap: wrap; }
