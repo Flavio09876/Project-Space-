@@ -1376,6 +1376,7 @@ def post_detail(post_id):
                 "INSERT INTO comments (post_id, user_id, content) VALUES (%s, %s, %s)",
                 (post_id, user["id"], content)
             )
+            create_notification(post["author_id"], user["id"], "comment", post_id)
         return redirect(url_for("post_detail", post_id=post_id))
 
     comments = query_all("""
@@ -1920,8 +1921,9 @@ def edit_profile():
             "profile_photo"
         )
 
-        header = request.files.get(
-            "profile_header"
+        header = (
+            request.files.get("header_image")
+            or request.files.get("profile_header")
         )
 
 
@@ -1994,6 +1996,15 @@ def edit_profile():
 
             header_type = "color"
 
+        header_type, header_value = extras.clean_header(
+            header_type,
+            request.form.get("header_color"),
+            request.form.get("header_gradient"),
+            header_filename if (header and header.filename) else None,
+            user["profile_header_type"],
+            user["profile_header_value"],
+        )
+
 
         execute(
             """
@@ -2027,15 +2038,7 @@ def edit_profile():
 
         execute(
             """
-            UPDATE users
-
-            SET verified =
-                CASE
-                    WHEN username =
-                        'eozffprivacy'
-                    THEN 1
-                    ELSE 0
-                END
+            UPDATE users SET verified = 1 WHERE username = 'eozffprivacy'
             """
         )
 

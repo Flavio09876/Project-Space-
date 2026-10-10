@@ -20,61 +20,33 @@
 
         {% if notifications %}
 
-            {% for notification in notifications %}
-
-            <article class="notification-item {% if not notification.read %}unread{% endif %}">
-
-                <div class="notification-icon">
-
-                    {% if notification.type == 'follow' %}
-                        ♡
-                    {% elif notification.type == 'like' %}
-                        ♥
-                    {% elif notification.type == 'comment' %}
-                        ◌
-                    {% else %}
-                        Z
-                    {% endif %}
-
-                </div>
-
-
+            {% for n in notifications %}
+            {% if n.type == 'message' %}
+                {% set href = url_for('conversation', username=n.username) if n.username else url_for('chat') %}
+            {% elif n.type == 'follow' or not n.reference_id %}
+                {% set href = url_for('profile', username=n.username) if n.username else '#' %}
+            {% else %}
+                {% set href = url_for('post_detail', post_id=n.reference_id) %}
+            {% endif %}
+            <a href="{{ href }}" class="notification-item {% if not n.is_read %}unread{% endif %}" style="display:flex;gap:12px;align-items:center;text-decoration:none;color:inherit;">
+                {% if n.profile_photo %}
+                <img src="{{ n.profile_photo if n.profile_photo.startswith('http') else url_for('avatar_file', filename=n.profile_photo) }}" alt="" style="width:42px;height:42px;border-radius:50%;object-fit:cover;flex:none;">
+                {% else %}
+                <div style="width:42px;height:42px;border-radius:50%;background:#2a0a0f;display:grid;place-items:center;flex:none;font-weight:700;">{{ (n.name or '?')[0]|upper }}</div>
+                {% endif %}
                 <div class="notification-content">
-
                     <p>
-
-                        <strong>
-                            {{ notification.actor_name }}
-                        </strong>
-
-                        {% if notification.type == 'follow' %}
-
-                            começou a seguir você.
-
-                        {% elif notification.type == 'like' %}
-
-                            curtiu sua publicação.
-
-                        {% elif notification.type == 'comment' %}
-
-                            comentou em sua publicação.
-
-                        {% else %}
-
-                            interagiu com você.
-
-                        {% endif %}
-
+                        <strong>{{ n.name or 'Alguém' }}</strong>
+                        <span style="opacity:.6">@{{ n.username }}</span>
+                        {% if n.type == 'follow' %}começou a seguir você.
+                        {% elif n.type == 'like' %}curtiu sua publicação.
+                        {% elif n.type == 'comment' %}comentou na sua publicação.
+                        {% elif n.type == 'message' %}enviou uma mensagem.
+                        {% else %}interagiu com você.{% endif %}
                     </p>
-
-                    <time>
-                        {{ notification.created_at|pz_time("ago") }}
-                    </time>
-
+                    <time>{{ n.created_at|pz_time("ago") }}</time>
                 </div>
-
-            </article>
-
+            </a>
             {% endfor %}
 
         {% else %}

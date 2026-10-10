@@ -425,6 +425,46 @@ def after_register(user_id, email):
 
 
 # ============================================================
+# CABEÇALHO (BANNER) DO PERFIL
+# ============================================================
+
+HEADER_GRADIENTS = (
+    "linear-gradient(135deg,#090909,#8B0000)",
+    "linear-gradient(135deg,#050505,#301050)",
+    "linear-gradient(135deg,#0b1115,#164e63)",
+    "linear-gradient(135deg,#171717,#555555)",
+)
+_HEX_RE = re.compile(r"^#[0-9a-fA-F]{6}$")
+
+
+def clean_header(header_type, color, gradient, uploaded_value, previous_type, previous_value):
+    """Devolve (tipo, valor) seguros para o banner. O valor vai para um atributo style,
+    por isso só aceitamos hex, gradientes da lista ou a URL/arquivo enviado."""
+    color = (color or "").strip()
+    gradient = (gradient or "").strip()
+
+    if header_type == "image":
+        if uploaded_value:
+            return "image", uploaded_value
+        if previous_type == "image" and previous_value:
+            return "image", previous_value
+        header_type = "color"
+
+    if header_type == "gradient":
+        if gradient in HEADER_GRADIENTS:
+            return "gradient", gradient
+        if previous_type == "gradient" and previous_value in HEADER_GRADIENTS:
+            return "gradient", previous_value
+        return "gradient", HEADER_GRADIENTS[0]
+
+    if _HEX_RE.match(color):
+        return "color", color
+    if previous_type == "color" and _HEX_RE.match(previous_value or ""):
+        return "color", previous_value
+    return "color", "#151515"
+
+
+# ============================================================
 # PROTEÇÕES GERAIS
 # ============================================================
 
