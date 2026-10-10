@@ -69,7 +69,7 @@
     {% else %}
     <a class="k-post__body" href="{{ url_for('post_detail', post_id=post.id) }}">
     {% endif %}
-        {% if post.content %}<p class="k-post__text">{{ post.content }}</p>{% endif %}
+        {% if post.content %}<p class="k-post__text">{{ post.content|rich }}</p>{% endif %}
         {% if post.media_filename %}
             <img class="k-post__media"
                  src="{{ post.media_filename if post.media_filename.startswith('http') else url_for('post_file', filename=post.media_filename) }}"

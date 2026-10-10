@@ -49,7 +49,7 @@
                         </a>
                         <span class="k-comment__meta">@{{ comment.username }} · {{ comment.created_at|pz_time('ago') }}{% if comment.edited_at %} · editado{% endif %}</span>
                     </div>
-                    <p class="k-comment__text">{{ comment.content }}</p>
+                    <p class="k-comment__text">{{ comment.content|rich }}</p>
                 </div>
             </article>
             {% else %}

@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% from "_wallet_icons.html" import kcoin %}
+{% block title %}Tarefas — K{% endblock %}
+{% block content %}
+<div class="page-container">
+  <div class="page-heading"><div><span class="eyebrow">GANHE KCOIN</span><h1>Tarefas</h1></div></div>
+  {% with m = get_flashed_messages() %}{% if m %}<p style="color:#ff8a95">{{ m[0] }}</p>{% endif %}{% endwith %}
+  <section class="notifications-card">
+    {% for t in items %}
+    <form method="POST" class="notification-item" style="display:flex;justify-content:space-between;align-items:center;gap:12px">
+      <div>
+        <div style="font-weight:700">{{ t.title }}</div>
+        <div style="opacity:.6;font-size:14px">{{ t.desc }}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;flex:none">
+        <span style="font-weight:800">+{{ t.reward }} {{ kcoin(16) }}</span>
+        <input type="hidden" name="task" value="{{ t.key }}">
+        {% if t.done %}<span style="opacity:.6">✓ feito</span>
+        {% elif t.ready %}<button class="z-profile-button primary">Pegar</button>
+        {% else %}<button class="z-profile-button secondary" disabled>Pendente</button>{% endif %}
+      </div>
+    </form>
+    {% endfor %}
+  </section>
+</div>
+{% endblock %}

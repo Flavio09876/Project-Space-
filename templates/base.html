@@ -93,6 +93,14 @@
                     Jogo do gráfico
                 </a>
 
+                <a href="{{ url_for('content.buscar') }}">
+                    Buscar
+                </a>
+
+                <a href="{{ url_for('content.tarefas') }}">
+                    Tarefas (ganhe kcoin)
+                </a>
+
                 <a href="{{ url_for('wallet.carteira') }}">
                     Carteira{% if wallet_me %} · {{ wallet_me.kcoin }} kcoin{% endif %}
                 </a>

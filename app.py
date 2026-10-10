@@ -2875,6 +2875,9 @@ wallet.migrate()
 import casino
 casino.install(app, globals())
 casino.migrate()
+import content
+content.install(app, globals())
+content.migrate()
 
 
 # ============================================================

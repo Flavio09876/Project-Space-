@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% from "_components.html" import avatar, post_card with context %}
+{% block title %}Buscar — K{% endblock %}
+{% block content %}
+<div class="page-container">
+  <div class="page-heading"><div><span class="eyebrow">BUSCA</span><h1>Buscar</h1></div></div>
+  <form method="GET" action="{{ url_for('content.buscar') }}" style="display:flex;gap:8px;margin-bottom:16px">
+    <input name="q" value="{{ q }}" placeholder="Pessoas, posts e #hashtags" style="flex:1" autofocus>
+    <button class="z-profile-button primary">Buscar</button>
+  </form>
+
+  {% if tags %}
+  <section class="notifications-card" style="padding:14px;margin-bottom:16px">
+    <div style="font-weight:700;margin-bottom:8px">Em alta</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      {% for tag, n in tags %}<a class="k-tag" href="{{ url_for('content.buscar', q='#' + tag) }}" style="background:#1a0b0e;border:1px solid #3a0d12;border-radius:999px;padding:6px 12px">#{{ tag }} <small style="opacity:.6">{{ n }}</small></a>{% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  {% if q %}
+    {% if users %}
+    <section class="notifications-card" style="margin-bottom:16px">
+      <div style="padding:14px 16px;font-weight:700">Pessoas</div>
+      {% for u in users %}
+      <a class="notification-item" href="{{ url_for('profile', username=u.username) }}" style="display:flex;gap:12px;align-items:center;text-decoration:none;color:inherit">
+        {{ avatar(u.profile_photo, u.name, 'md') }}
+        <div><strong>{{ u.name }}</strong>{% if u.verified %}<span class="k-verified"></span>{% endif %}<div style="opacity:.6">@{{ u.username }}</div></div>
+      </a>
+      {% endfor %}
+    </section>
+    {% endif %}
+    {% if posts %}
+      <div style="font-weight:700;margin:8px 2px">Publicações</div>
+      {% for post in posts %}{{ post_card(post, post.name, post.username, post.profile_photo, post.verified) }}{% endfor %}
+    {% elif not users %}
+      <div class="empty-state"><p>Nada encontrado para "{{ q }}".</p></div>
+    {% endif %}
+  {% endif %}
+</div>
+{% endblock %}

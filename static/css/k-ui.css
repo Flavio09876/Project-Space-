@@ -773,3 +773,5 @@ small.k-hint { margin: 0; font-size: 12.5px; }
 .k-post__nametext { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .k-post__name .k-verified { vertical-align: middle !important; margin-left: 5px !important; }
 .brand-mark { overflow: hidden; background: none !important; }
+
+.k-tag{color:#ff5566;text-decoration:none;font-weight:600}.k-tag:hover{text-decoration:underline}
