@@ -2962,6 +2962,9 @@ try:
     import content
     content.install(app, globals())
     content.migrate()
+    import shop
+    shop.install(app, globals())
+    shop.migrate()
     import market
     market.install(app, globals())
     market.migrate()

@@ -37,6 +37,7 @@
             <a href="{{ url_for('content.tarefas') }}" class="{{ 'on' if request.endpoint == 'content.tarefas' }}">Missões</a>
             <a href="{{ url_for('casino.page') }}" class="{{ 'on' if request.endpoint and request.endpoint.startswith('casino') }}">Jogo do gráfico</a>
             <a href="{{ url_for('market.lista') }}" class="{{ 'on' if request.endpoint and request.endpoint.startswith('market') }}">Bolsa K</a>
+            <a href="{{ url_for('shop.loja') }}" class="{{ 'on' if request.endpoint and request.endpoint.startswith('shop') }}">Loja</a>
             <a href="{{ url_for('wallet.carteira') }}" class="{{ 'on' if request.endpoint == 'wallet.carteira' }}">Carteira</a>
             <a href="{{ url_for('profile', username=current_user.username) }}" class="{{ 'on' if request.endpoint == 'profile' }}">Perfil</a>
             <a href="{{ url_for('extras.settings') }}">Configurações</a>
@@ -127,6 +128,10 @@
                     Bolsa K
                 </a>
 
+                <a href="{{ url_for('shop.loja') }}">
+                    Loja
+                </a>
+
                 <a href="{{ url_for('content.buscar') }}">
                     Buscar
                 </a>
@@ -144,7 +149,6 @@
                 </a>
 
                 {% if is_admin %}
-                <a href="{{ url_for('content.nicks') }}">Nicks animados</a>
                 <a href="{{ url_for('extras.admin') }}">
                     Painel admin{% if open_reports %} ({{ open_reports }}){% endif %}
                 </a>

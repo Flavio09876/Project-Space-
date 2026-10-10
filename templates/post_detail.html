@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_components.html" import avatar, post_card, role_tag with context %}
+{% from "_components.html" import avatar, framed, post_card, role_tag with context %}
 
 {% block title %}Publicação — K{% endblock %}
 
@@ -24,7 +24,7 @@
             {% for comment in comments %}
             <article class="k-comment">
                 <a href="{{ url_for('profile', username=comment.username) }}">
-                    {{ avatar(comment.profile_photo, comment.name, 'sm') }}
+                    {{ framed(comment.profile_photo, comment.name, 'sm', comment.username) }}
                 </a>
                 <div class="k-comment__main">
                     <div class="k-comment__head">

@@ -1,6 +1,6 @@
 {% macro role_tag(username) -%}
-{%- if username == 'eozffprivacy' %}<span class="k-rtag k-rtag--admin" title="Administração"><svg viewBox="0 0 16 16" width="10" height="10" aria-hidden="true"><path d="M8 1.2l5.6 2v4.1c0 3.3-2.3 5.6-5.6 7.5C4.7 12.9 2.4 10.6 2.4 7.3V3.2z" fill="currentColor"/></svg>ADM</span>
-{%- elif username == 'staffmoderator' %}<span class="k-rtag k-rtag--mod" title="Moderação"><svg viewBox="0 0 16 16" width="10" height="10" aria-hidden="true"><path d="M8 1.2l5.6 2v4.1c0 3.3-2.3 5.6-5.6 7.5C4.7 12.9 2.4 10.6 2.4 7.3V3.2z" fill="currentColor"/></svg>MOD</span>{% endif -%}
+{%- if username == 'eozffprivacy' %}<span class="k-rtag k-rtag--admin" title="Administração"><i>K</i>ADM</span>
+{%- elif username == 'staffmoderator' %}<span class="k-rtag k-rtag--mod" title="Moderação"><i>K</i>MOD</span>{% endif -%}
 {%- endmacro %}
 {# Componentes compartilhados do K. Importe com: {% from "_components.html" import ... with context %} #}
 
@@ -14,6 +14,11 @@
 {%- endmacro %}
 
 
+
+{% macro framed(photo, name, size, username) -%}
+    {%- set fr = frame_for(username) -%}
+    {%- if fr -%}<span class="{{ fr }} k-frame--{{ size }}">{{ avatar(photo, name, size) }}</span>{%- else -%}{{ avatar(photo, name, size) }}{%- endif -%}
+{%- endmacro %}
 
 {% macro post_menu(post, username) %}
 {% set mine = current_user and current_user.id == post.author_id %}
@@ -52,7 +57,7 @@
 
     <header class="k-post__head">
         <a class="k-post__author" href="{{ url_for('profile', username=username) }}">
-            {{ avatar(photo, name, 'md') }}
+            {{ framed(photo, name, 'md', username) }}
             <span class="k-post__who">
                 <span class="k-post__name">
                     <span class="k-post__nametext {{ fx_for(username) }}">{{ name }}</span>{% if verified %}<span class="k-verified" title="Conta verificada">✓</span>{% endif %}{{ role_tag(username) }}

@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% from "_wallet_icons.html" import kcoin %}
+{% block title %}Loja — K{% endblock %}
+{% block content %}
+<style>
+.sp-tabs{display:flex;gap:8px;margin-bottom:16px}
+.sp-tabs a{padding:10px 20px;border-radius:999px;background:#101014;border:1px solid #26262d;color:#c9c9d1;text-decoration:none;font-weight:700}
+.sp-tabs a.on{background:rgba(225,29,46,.18);border-color:#e11d2e;color:#fff}
+.sp-grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(230px,1fr))}
+.sp-card{background:linear-gradient(180deg,#111116,#0a0a0d);border:1px solid #2a0c11;border-radius:20px;padding:18px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px}
+.sp-stage{height:130px;display:grid;place-items:center}
+.sp-price{display:inline-flex;align-items:center;gap:6px;font-weight:800}
+.sp-card form{width:100%}
+.sp-card button{width:100%}
+</style>
+<div class="page-container">
+  <div class="page-heading"><div><span class="eyebrow">LOJA</span><h1>Loja K</h1></div>
+    <span class="sp-price">{{ kcoin(18) }} {{ wallet.kcoin }}</span></div>
+  {% with m = get_flashed_messages() %}{% if m %}<p style="color:#ff8a95">{{ m[0] }}</p>{% endif %}{% endwith %}
+
+  <nav class="sp-tabs">
+    <a href="{{ url_for('shop.loja', cat='molduras') }}" class="{{ 'on' if cat == 'molduras' }}">Molduras</a>
+    <a href="{{ url_for('shop.loja', cat='nicks') }}" class="{{ 'on' if cat == 'nicks' }}">Nicks animados</a>
+  </nav>
+
+  {% set photo = current_user.profile_photo %}
+  {% set src = (photo if photo.startswith('http') else url_for('avatar_file', filename=photo)) if photo else '' %}
+  <div class="sp-grid">
+    {% for key, name, desc, price in items %}
+    {% set have = admin or (kind, key) in owned %}
+    {% set on = equipped[kind] == key %}
+    <section class="sp-card">
+      <div class="sp-stage">
+        {% if kind == 'frame' %}
+          <div class="k-frame k-frame--{{ key }}" style="--sz:92px;--fw:6px">
+            {% if src %}<img src="{{ src }}" alt="">{% else %}<span class="k-frame__ph">{{ current_user.name[0]|upper }}</span>{% endif %}
+          </div>
+        {% else %}
+          <div class="nfx nfx-{{ key }}" style="font-size:26px;font-weight:900;word-break:break-word">{{ current_user.name }}</div>
+        {% endif %}
+      </div>
+      <div><div style="font-weight:800;font-size:17px">{{ name }}</div><div style="opacity:.6;font-size:13px">{{ desc }}</div></div>
+      {% if admin %}<span style="opacity:.6;font-size:13px">grátis para administração</span>
+      {% elif not have %}<span class="sp-price">{{ kcoin(16) }} {{ price }}</span>{% endif %}
+      {% if on %}
+        <form method="POST" action="{{ url_for('shop.equipar') }}"><input type="hidden" name="kind" value="{{ kind }}"><input type="hidden" name="item" value="">
+          <button class="z-profile-button secondary">Equipado · remover</button></form>
+      {% elif have %}
+        <form method="POST" action="{{ url_for('shop.equipar') }}"><input type="hidden" name="kind" value="{{ kind }}"><input type="hidden" name="item" value="{{ key }}">
+          <button class="z-profile-button primary">Equipar</button></form>
+      {% else %}
+        <form method="POST" action="{{ url_for('shop.comprar') }}" onsubmit="return confirm('Comprar {{ name }} por {{ price }} kcoin?')"><input type="hidden" name="kind" value="{{ kind }}"><input type="hidden" name="item" value="{{ key }}">
+          <button class="z-profile-button primary" {% if wallet.kcoin < price %}disabled{% endif %}>Comprar</button></form>
+      {% endif %}
+    </section>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

@@ -87,7 +87,7 @@ def change(user_id, kind, kcoin=0, crystals=0, note=None):
 
 
 KIND_LABEL = {
-    "genesis": "Saldo inicial", "welcome": "Bônus de boas-vindas", "bet_stake": "Aposta", "market": "Bolsa", "market_win": "Bolsa: ganho", "market_loss": "Bolsa: perda", "founder": "Empresa criada", "bet_free": "Rodada grátis", "convert_in": "Troca por cristais", "convert_out": "Troca por kcoin",
+    "genesis": "Saldo inicial", "welcome": "Bônus de boas-vindas", "bet_stake": "Aposta", "market": "Bolsa", "shop": "Loja", "market_win": "Bolsa: ganho", "market_loss": "Bolsa: perda", "founder": "Empresa criada", "bet_free": "Rodada grátis", "convert_in": "Troca por cristais", "convert_out": "Troca por kcoin",
     "task": "Tarefa", "bet_win": "Ganho no jogo", "bet_loss": "Aposta perdida",
     "house": "Receita da plataforma", "mod": "Repasse moderação",
 }

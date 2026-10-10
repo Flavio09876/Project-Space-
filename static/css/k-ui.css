@@ -860,11 +860,10 @@ html, body { overflow-x: hidden; }
 .k-frame--5::after { inset: calc(var(--fw) * -1.6); background: radial-gradient(circle at 50% 0, #fff 0 3px, #ff8a95 4px, transparent 7px); animation: kf-spin 2.2s linear infinite; }
 @media (prefers-reduced-motion: reduce) { .k-frame::before, .k-frame::after { animation: none !important; } }
 
-/* ---------- Tag de cargo (discreta, estilo tag de servidor) ---------- */
-.k-rtag { display: inline-flex; align-items: center; gap: 3px; flex: none; margin-left: 6px; padding: 1px 6px 1px 5px; border-radius: 5px; font-size: 10.5px; font-weight: 700; letter-spacing: .04em; line-height: 1.5; vertical-align: middle; white-space: nowrap; background: #1b1c21; color: #b4b8c2; border: 1px solid #2c2e36; }
-.k-rtag svg { flex: none; }
-.k-rtag--admin { color: #ff7480; background: rgba(225,29,46,.12); border-color: rgba(225,29,46,.35); }
-.k-rtag--mod { color: #9fb4ff; background: rgba(110,140,255,.10); border-color: rgba(110,140,255,.30); }
+/* ---------- Tag de cargo (emblema + sigla, como tag de servidor) ---------- */
+.k-rtag { display: inline-flex; align-items: center; gap: 5px; flex: none; margin-left: 7px; padding: 2px 8px 2px 3px; border-radius: 7px; font-size: 11px; font-weight: 800; letter-spacing: .05em; line-height: 1; vertical-align: middle; white-space: nowrap; color: #eceef2; background: #202127; border: 1px solid #34363f; }
+.k-rtag i { display: grid; place-items: center; width: 15px; height: 15px; border-radius: 5px; font-style: normal; font-size: 10px; font-weight: 900; color: #fff; background: linear-gradient(145deg, #ff3444, #8f0a16); }
+.k-rtag--mod i { background: linear-gradient(145deg, #5b6bff, #2a2f8f); }
 .z-profile-name-row { flex-wrap: wrap; }
 
 /* ---------- Nicks animados ---------- */
@@ -881,3 +880,12 @@ html, body { overflow-x: hidden; }
 .nfx-ouro { background: linear-gradient(110deg, #8a6a1f 30%, #fff1b8 45%, #ffd24d 50%, #fff1b8 55%, #8a6a1f 70%) 0 0 / 250% 100%; -webkit-background-clip: text; background-clip: text; color: transparent !important; animation: nfx-flow 3.2s linear infinite; }
 .nfx-prisma { background: linear-gradient(90deg, #ff4d5e, #ffb020, #6ee7a0, #4db8ff, #c084fc, #ff4d5e) 0 0 / 200% 100%; -webkit-background-clip: text; background-clip: text; color: transparent !important; animation: nfx-flow 4s linear infinite; }
 @media (prefers-reduced-motion: reduce) { .nfx { animation: none !important; } }
+
+/* ---------- Moldura em avatares ---------- */
+.k-frame > .k-avatar, .z-profile-avatar-wrap.k-frame > .z-profile-avatar { position: relative; z-index: 2; }
+.k-frame.k-frame--sm { --sz: 36px; --fw: 3px; } .k-frame.k-frame--md { --sz: 46px; --fw: 3px; } .k-frame.k-frame--lg { --sz: 58px; --fw: 4px; }
+.k-frame--sm > .k-avatar, .k-frame--md > .k-avatar, .k-frame--lg > .k-avatar { width: var(--sz); height: var(--sz); }
+.z-profile-avatar-wrap.k-frame { --pw: 112px; display: grid !important; width: var(--pw); height: var(--pw); padding: 6px; box-sizing: border-box; --fw: 6px; }
+.z-profile-avatar-wrap.k-frame > .z-profile-avatar { width: 100% !important; height: 100% !important; }
+@media (max-width: 640px) { .z-profile-avatar-wrap.k-frame { --pw: 88px; padding: 5px; } }
+@media (max-width: 420px) { .z-profile-avatar-wrap.k-frame { --pw: 76px; } }
