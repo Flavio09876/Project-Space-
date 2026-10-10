@@ -234,17 +234,6 @@ FRAMES = [
 ]
 
 
-@bp.route("/molduras")
-def molduras():
-    """Prévia das molduras animadas — por enquanto só para administradores."""
-    import extras
-    user = core.get_current_user()
-    if not user or not extras.is_admin(user):
-        from flask import abort
-        abort(404)
-    return render_template("frames.html", frames=FRAMES)
-
-
 def install(app, namespace):
     for name in ("get_db", "query_one", "query_all", "execute", "get_current_user"):
         setattr(core, name, namespace[name])

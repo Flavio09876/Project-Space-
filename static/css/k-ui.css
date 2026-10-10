@@ -860,10 +860,11 @@ html, body { overflow-x: hidden; }
 .k-frame--5::after { inset: calc(var(--fw) * -1.6); background: radial-gradient(circle at 50% 0, #fff 0 3px, #ff8a95 4px, transparent 7px); animation: kf-spin 2.2s linear infinite; }
 @media (prefers-reduced-motion: reduce) { .k-frame::before, .k-frame::after { animation: none !important; } }
 
-/* ---------- Tag de cargo (estilo tag de servidor) ---------- */
-.k-rtag { display: inline-flex; align-items: center; flex: none; margin-left: 6px; padding: 2px 7px; border-radius: 6px; font-size: 11px; font-weight: 800; letter-spacing: .06em; line-height: 1.3; vertical-align: middle; border: 1px solid transparent; white-space: nowrap; }
-.k-rtag--admin { color: #fff; background: linear-gradient(145deg, #ff3444, #8f0a16); border-color: #ff8a95; box-shadow: 0 0 10px rgba(225,29,46,.5); }
-.k-rtag--mod { color: #ffd0d5; background: #1d0a0e; border-color: #7a1a24; }
+/* ---------- Tag de cargo (discreta, estilo tag de servidor) ---------- */
+.k-rtag { display: inline-flex; align-items: center; gap: 3px; flex: none; margin-left: 6px; padding: 1px 6px 1px 5px; border-radius: 5px; font-size: 10.5px; font-weight: 700; letter-spacing: .04em; line-height: 1.5; vertical-align: middle; white-space: nowrap; background: #1b1c21; color: #b4b8c2; border: 1px solid #2c2e36; }
+.k-rtag svg { flex: none; }
+.k-rtag--admin { color: #ff7480; background: rgba(225,29,46,.12); border-color: rgba(225,29,46,.35); }
+.k-rtag--mod { color: #9fb4ff; background: rgba(110,140,255,.10); border-color: rgba(110,140,255,.30); }
 .z-profile-name-row { flex-wrap: wrap; }
 
 /* ---------- Nicks animados ---------- */
