@@ -34,6 +34,7 @@ def migrate():
         payout BIGINT NOT NULL DEFAULT 0,
         started_at TIMESTAMP NOT NULL DEFAULT (NOW() AT TIME ZONE 'utc')
     )""")
+    core.execute("ALTER TABLE casino_rounds ADD COLUMN IF NOT EXISTS auto_mult DOUBLE PRECISION")
     core.execute("CREATE INDEX IF NOT EXISTS casino_rounds_user_idx ON casino_rounds (user_id, id DESC)")
 
 
@@ -113,12 +114,17 @@ def _get_open(user_id):
 
 
 def _resolve_if_crashed(rnd):
+    """Resolve por tempo: queda ou saque automático. Retorna (finalizada, elapsed, resultado)."""
     elapsed = (_now() - rnd["started_at"]).total_seconds()
     t_crash = math.log(rnd["crash_point"]) / RATE
+    auto = rnd.get("auto_mult")
+    if auto and auto < rnd["crash_point"] and elapsed >= math.log(auto) / RATE:
+        _settle(rnd, True, auto)
+        return True, elapsed, ("cashed", auto)
     if elapsed >= t_crash:
         _settle(rnd, False)
-        return True, elapsed
-    return False, elapsed
+        return True, elapsed, ("crashed", rnd["crash_point"])
+    return False, elapsed, None
 
 
 @bp.route("/casino")
@@ -148,8 +154,8 @@ def start():
 
     open_round = _get_open(user["id"])
     if open_round:
-        crashed, _ = _resolve_if_crashed(open_round)
-        if not crashed:
+        done, _, _r = _resolve_if_crashed(open_round)
+        if not done:
             return jsonify(error="Você já tem uma rodada em andamento."), 409
 
     data = request.get_json(silent=True) or request.form
@@ -158,6 +164,11 @@ def start():
     except (TypeError, ValueError):
         return jsonify(error="Valor inválido."), 400
     free = str(data.get("free", "")).lower() in ("1", "true", "on")
+    try:
+        auto = float(data.get("auto") or 0)
+    except (TypeError, ValueError):
+        auto = 0
+    auto = round(auto, 2) if 1.1 <= auto <= MAX_MULT else None
 
     if free:
         if _free_used(user["id"]) >= FREE_PER_DAY:
@@ -173,12 +184,20 @@ def start():
             if not free and not wallet.apply(cur, user["id"], "bet_stake", -stake, 0, "Aposta no gráfico"):
                 return jsonify(error="Saldo insuficiente."), 400
             cur.execute(
-                """INSERT INTO casino_rounds (user_id, stake, free, crash_point, started_at)
-                   VALUES (%s,%s,%s,%s,%s) RETURNING id""",
-                (user["id"], stake, free, crash, _now()),
+                """INSERT INTO casino_rounds (user_id, stake, free, crash_point, started_at, auto_mult)
+                   VALUES (%s,%s,%s,%s,%s,%s) RETURNING id""",
+                (user["id"], stake, free, crash, _now(), auto),
             )
             rid = cur.fetchone()["id"]
-    return jsonify(ok=True, id=rid, rate=RATE)
+    w = wallet.get_wallet(user["id"])
+    return jsonify(ok=True, id=rid, rate=RATE, kcoin=w["kcoin"], free_left=max(0, FREE_PER_DAY - _free_used(user["id"])))
+
+
+def _last_result(user_id):
+    last = core.query_one("SELECT * FROM casino_rounds WHERE user_id=%s ORDER BY id DESC LIMIT 1", (user_id,))
+    if not last or last["status"] == "open":
+        return None
+    return last
 
 
 @bp.route("/casino/tick")
@@ -188,15 +207,21 @@ def tick():
         return jsonify(error="Faça login."), 401
     rnd = _get_open(user["id"])
     if not rnd:
-        last = core.query_one(
-            "SELECT * FROM casino_rounds WHERE user_id=%s ORDER BY id DESC LIMIT 1", (user["id"],))
+        last = _last_result(user["id"])
         if last and last["status"] == "lost":
             return jsonify(status="crashed", crash=last["crash_point"])
+        if last and last["status"] == "cashed":
+            w = wallet.get_wallet(user["id"])
+            return jsonify(status="cashed", mult=last["cashed_mult"], payout=last["payout"], kcoin=w["kcoin"])
         return jsonify(status="idle")
-    crashed, elapsed = _resolve_if_crashed(rnd)
-    if crashed:
-        return jsonify(status="crashed", crash=rnd["crash_point"])
-    return jsonify(status="running", mult=round(_mult_at(elapsed), 2), elapsed=elapsed)
+    done, elapsed, res = _resolve_if_crashed(rnd)
+    if done:
+        w = wallet.get_wallet(user["id"])
+        if res[0] == "cashed":
+            return jsonify(status="cashed", mult=res[1], payout=int(rnd["stake"] * res[1]), kcoin=w["kcoin"], auto=True)
+        return jsonify(status="crashed", crash=res[1], kcoin=w["kcoin"])
+    return jsonify(status="running", mult=round(_mult_at(elapsed), 2), elapsed=elapsed,
+                   stake=rnd["stake"], free=rnd["free"], auto=rnd.get("auto_mult"))
 
 
 @bp.route("/casino/cashout", methods=["POST"])
@@ -207,13 +232,27 @@ def cashout():
     rnd = _get_open(user["id"])
     if not rnd:
         return jsonify(error="Nenhuma rodada em andamento."), 409
-    crashed, elapsed = _resolve_if_crashed(rnd)
-    if crashed:
-        return jsonify(status="crashed", crash=rnd["crash_point"])
+    done, elapsed, res = _resolve_if_crashed(rnd)
+    w = wallet.get_wallet(user["id"])
+    if done:
+        if res[0] == "cashed":
+            return jsonify(status="cashed", mult=res[1], payout=int(rnd["stake"] * res[1]), kcoin=w["kcoin"])
+        return jsonify(status="crashed", crash=res[1], kcoin=w["kcoin"])
     mult = math.floor(_mult_at(elapsed) * 100) / 100
     payout = _settle(rnd, True, mult)
     w = wallet.get_wallet(user["id"])
-    return jsonify(status="cashed", mult=mult, payout=payout, kcoin=w["kcoin"])
+    return jsonify(status="cashed", mult=mult, payout=payout or 0, kcoin=w["kcoin"])
+
+
+@bp.route("/casino/feed")
+def feed():
+    if not core.get_current_user():
+        return jsonify(rounds=[])
+    rows = core.query_all(
+        """SELECT r.status, r.cashed_mult, r.crash_point, r.payout, u.username
+           FROM casino_rounds r JOIN users u ON u.id = r.user_id
+           WHERE r.status <> 'open' ORDER BY r.id DESC LIMIT 12""")
+    return jsonify(rounds=[dict(u=r["username"], s=r["status"], m=r["cashed_mult"], c=r["crash_point"], p=r["payout"]) for r in rows])
 
 
 def install(app, namespace):

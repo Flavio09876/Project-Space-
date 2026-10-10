@@ -2,108 +2,204 @@
 {% from "_wallet_icons.html" import kcoin %}
 {% block title %}Gráfico — K{% endblock %}
 {% block content %}
+<style>
+.cz{max-width:980px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr);gap:16px}
+@media(min-width:900px){.cz{grid-template-columns:minmax(0,1.6fr) minmax(280px,1fr);align-items:start}}
+.cz-card{background:linear-gradient(180deg,#101014,#0a0a0d);border:1px solid #2a0c11;border-radius:20px;padding:16px;box-shadow:0 20px 60px rgba(0,0,0,.45)}
+.cz-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:8px;flex-wrap:wrap}
+.cz-chip{display:inline-flex;align-items:center;gap:6px;background:#15151a;border:1px solid #26262d;border-radius:999px;padding:6px 12px;font-weight:700;font-size:14px}
+.cz-stage{position:relative;border-radius:16px;overflow:hidden;background:radial-gradient(120% 90% at 50% 100%,#2a0710 0%,#0a0a0d 60%);border:1px solid #2a0c11}
+.cz-stage canvas{display:block;width:100%;height:340px}
+.cz-mult{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none;text-align:center}
+.cz-mult b{display:block;font-size:clamp(46px,9vw,84px);font-weight:900;letter-spacing:-2px;line-height:1;font-variant-numeric:tabular-nums;text-shadow:0 0 30px currentColor}
+.cz-mult span{display:block;margin-top:8px;font-size:14px;opacity:.75;min-height:18px}
+.cz-shake{animation:czs .5s}
+@keyframes czs{10%,90%{transform:translateX(-3px)}30%,70%{transform:translateX(6px)}50%{transform:translateX(-6px)}}
+.cz-hist{display:flex;gap:6px;overflow-x:auto;margin-bottom:10px;padding-bottom:2px}
+.cz-hist i{font-style:normal;flex:none;font-weight:800;font-size:12px;padding:4px 9px;border-radius:999px;background:#15151a}
+.cz-hist i.hi{color:#6ee7a0;background:#0f2a1c}.cz-hist i.lo{color:#ff8a95;background:#2a0f14}
+.cz-controls{display:grid;gap:10px;margin-top:14px}
+.cz-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.cz-row input{flex:1;min-width:0;background:#0c0c10;border:1px solid #2a2a31;color:#fff;border-radius:12px;padding:12px;font-size:16px;font-weight:700}
+.cz-q{background:#15151a;border:1px solid #26262d;color:#fff;border-radius:10px;padding:8px 12px;font-weight:700;cursor:pointer}
+.cz-q:hover{border-color:#e11d2e}
+.cz-btn{flex:1;border:0;border-radius:14px;padding:15px;font-size:16px;font-weight:900;color:#fff;cursor:pointer;background:linear-gradient(145deg,#ff3444,#a40f1c);box-shadow:0 8px 24px rgba(225,29,46,.4)}
+.cz-btn.alt{background:#17171c;box-shadow:none;border:1px solid #2a2a31}
+.cz-btn.go{background:linear-gradient(145deg,#2fe08a,#0e8a4b);box-shadow:0 8px 24px rgba(30,200,120,.35)}
+.cz-btn:disabled{opacity:.4;cursor:not-allowed}
+.cz-feed div{display:flex;justify-content:space-between;padding:9px 2px;border-bottom:1px solid #1a1a20;font-size:14px}
+.cz-feed div:last-child{border:0}
+.cz-lbl{font-size:12px;opacity:.6;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
+</style>
+
 <div class="page-container">
   <div class="page-heading"><div><span class="eyebrow">JOGO</span><h1>Gráfico K</h1></div></div>
 
   {% if not adult %}
-  <section class="notifications-card" style="padding:18px">
-    O jogo é apenas para maiores de 18 anos.
-  </section>
+  <section class="cz-card">O jogo é apenas para maiores de 18 anos.</section>
   {% else %}
-  <section class="notifications-card" style="padding:14px">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-      <span>Saldo: <strong id="bal">{{ w.kcoin }}</strong> {{ kcoin(16) }}</span>
-      <span style="opacity:.7">Grátis hoje: <strong id="free-left">{{ free_left }}</strong>/{{ cfg.free_total }}</span>
-    </div>
-    <canvas id="cv" width="640" height="300" style="width:100%;height:auto;background:#0b0b0e;border:1px solid #3a0d12;border-radius:14px"></canvas>
-    <div id="big" style="text-align:center;font-size:44px;font-weight:900;margin:8px 0">1.00x</div>
-    <div id="msg" style="text-align:center;min-height:22px;opacity:.85"></div>
-    <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
-      <input id="stake" type="number" min="{{ cfg.min }}" max="{{ cfg.max }}" value="10" style="flex:1;min-width:90px">
-      <button id="go" class="z-profile-button primary">Apostar</button>
-      <button id="gofree" class="z-profile-button secondary" {% if free_left <= 0 %}disabled{% endif %}>Rodada grátis</button>
-      <button id="out" class="z-profile-button primary" style="display:none;flex:1">Sacar</button>
-    </div>
-    <p style="opacity:.55;font-size:13px;margin:10px 0 0">
-      Aposta de {{ cfg.min }} a {{ cfg.max }} kcoin (grátis: até {{ cfg.free_max }}). Saque antes de o gráfico cair.
-      Moeda virtual, sem valor em dinheiro.
-    </p>
-  </section>
+  <div class="cz">
+    <section class="cz-card" id="cz-main">
+      <div class="cz-top">
+        <span class="cz-chip">{{ kcoin(18) }} <span id="bal">{{ w.kcoin }}</span></span>
+        <span class="cz-chip">🎟 Grátis hoje <span id="free-left">{{ free_left }}</span>/{{ cfg.free_total }}</span>
+        <button class="cz-q" id="snd" type="button">🔇 Som</button>
+      </div>
+      <div class="cz-hist" id="hist"></div>
+      <div class="cz-stage" id="stage">
+        <canvas id="cv"></canvas>
+        <div class="cz-mult"><div><b id="big">1.00x</b><span id="msg">Escolha o valor e aposte</span></div></div>
+      </div>
 
-  <section class="notifications-card" style="margin-top:14px">
-    <div style="padding:14px 16px;font-weight:700">Últimas rodadas</div>
-    {% for r in rows %}
-    <div class="notification-item" style="display:flex;justify-content:space-between">
-      <span>{{ r.stake }} {{ kcoin(13) }}{% if r.free %} · grátis{% endif %}</span>
-      <span style="color:{{ '#6ee7a0' if r.status == 'cashed' else '#ff8a95' }}">
-        {% if r.status == 'cashed' %}x{{ '%.2f'|format(r.cashed_mult) }} → +{{ r.payout }}{% else %}caiu em x{{ '%.2f'|format(r.crash_point) }}{% endif %}
-      </span>
-    </div>
-    {% else %}<div class="empty-state"><p>Nenhuma rodada ainda.</p></div>{% endfor %}
-  </section>
+      <div class="cz-controls">
+        <div>
+          <div class="cz-lbl">Valor da aposta</div>
+          <div class="cz-row">
+            <input id="stake" type="number" inputmode="numeric" min="{{ cfg.min }}" max="{{ cfg.max }}" value="10">
+            <button class="cz-q" data-q="half" type="button">½</button>
+            <button class="cz-q" data-q="x2" type="button">2×</button>
+            <button class="cz-q" data-q="max" type="button">Máx</button>
+          </div>
+        </div>
+        <div>
+          <div class="cz-lbl">Saque automático (opcional)</div>
+          <div class="cz-row"><input id="auto" type="number" step="0.1" min="1.1" max="20" placeholder="ex.: 2.0 (x)"></div>
+        </div>
+        <div class="cz-row">
+          <button id="go" class="cz-btn" type="button">Apostar</button>
+          <button id="gofree" class="cz-btn alt" type="button" {% if free_left <= 0 %}disabled{% endif %}>Rodada grátis</button>
+          <button id="out" class="cz-btn go" type="button" style="display:none">Sacar agora</button>
+        </div>
+        <p style="opacity:.5;font-size:12px;margin:0">Aposta de {{ cfg.min }} a {{ cfg.max }} kcoin (grátis: até {{ cfg.free_max }}). Moeda virtual, sem valor em dinheiro. Só maiores de 18.</p>
+      </div>
+    </section>
+
+    <aside class="cz-card">
+      <div class="cz-lbl">Ao vivo</div>
+      <div class="cz-feed" id="feed"><div style="opacity:.5">Carregando…</div></div>
+      <div class="cz-lbl" style="margin-top:16px">Suas últimas rodadas</div>
+      <div class="cz-feed">
+        {% for r in rows %}
+        <div><span>{{ r.stake }}{% if r.free %} · grátis{% endif %}</span>
+          <span style="color:{{ '#6ee7a0' if r.status == 'cashed' else '#ff8a95' }}">{% if r.status == 'cashed' %}x{{ '%.2f'|format(r.cashed_mult) }} · +{{ r.payout }}{% else %}caiu x{{ '%.2f'|format(r.crash_point) }}{% endif %}</span></div>
+        {% else %}<div style="opacity:.5">Nenhuma ainda.</div>{% endfor %}
+      </div>
+    </aside>
+  </div>
   {% endif %}
 </div>
 
 <script>
 (function(){
   var go=document.getElementById('go'); if(!go) return;
-  var gofree=document.getElementById('gofree'), out=document.getElementById('out');
-  var big=document.getElementById('big'), msg=document.getElementById('msg');
-  var cv=document.getElementById('cv'), ctx=cv.getContext('2d');
-  var RATE={{ cfg.rate }}, t0=0, timer=null, draw=null, running=false, pts=[];
+  var $=function(i){return document.getElementById(i)};
+  var gofree=$('gofree'),out=$('out'),big=$('big'),msg=$('msg'),cv=$('cv'),ctx=cv.getContext('2d'),stage=$('stage');
+  var RATE={{ cfg.rate }},MAXS={{ cfg.max }},FREEMAX={{ cfg.free_max }},MINB={{ cfg.min }};
+  var t0=0,running=false,poll=null,raf=null,state='idle',lastM=1,particles=[],W=0,H=0,sound=false,actx=null,stakeNow=0,autoNow=null;
 
-  function post(url,body){return fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body||{})}).then(function(r){return r.json();});}
-  function setBal(n){document.getElementById('bal').textContent=n;}
-  function ui(r){running=r;go.style.display=gofree.style.display=r?'none':'';out.style.display=r?'':'none';}
-  function paint(m,color){
-    var W=cv.width,H=cv.height;ctx.clearRect(0,0,W,H);
-    ctx.strokeStyle='#1d1d22';ctx.lineWidth=1;
-    for(var i=1;i<5;i++){ctx.beginPath();ctx.moveTo(0,H*i/5);ctx.lineTo(W,H*i/5);ctx.stroke();}
-    var tmax=Math.max(10,Math.log(Math.max(m,2))/RATE*1.15), mmax=Math.max(m*1.15,2);
-    ctx.strokeStyle=color||'#ff2d40';ctx.lineWidth=4;ctx.lineJoin='round';ctx.beginPath();
-    var steps=80;
-    for(var s=0;s<=steps;s++){var t=Math.log(m)/RATE*s/steps, v=Math.exp(RATE*t);
-      var x=t/tmax*W, y=H-(v-1)/(mmax-1)*(H-20)-10; s?ctx.lineTo(x,y):ctx.moveTo(x,y);}
-    ctx.stroke();
+  function fit(){var r=window.devicePixelRatio||1;W=cv.clientWidth;H=cv.clientHeight;cv.width=W*r;cv.height=H*r;ctx.setTransform(r,0,0,r,0,0);}
+  window.addEventListener('resize',function(){fit();paint(lastM,state)});
+  function beep(f,d,v){if(!sound)return;try{actx=actx||new (window.AudioContext||window.webkitAudioContext)();var o=actx.createOscillator(),g=actx.createGain();o.frequency.value=f;o.type='sine';g.gain.value=v||.05;o.connect(g);g.connect(actx.destination);o.start();g.gain.exponentialRampToValueAtTime(.0001,actx.currentTime+d);o.stop(actx.currentTime+d)}catch(e){}}
+  $('snd').onclick=function(){sound=!sound;this.textContent=sound?'🔊 Som':'🔇 Som';beep(660,.15)};
+
+  function post(u,b){return fetch(u,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b||{})}).then(function(r){return r.json()})}
+  function setBal(n){$('bal').textContent=n}
+  function ui(r){running=r;go.style.display=gofree.style.display=r?'none':'';out.style.display=r?'':'none';$('stake').disabled=$('auto').disabled=r}
+  function color(m){return m<2?'#ff4d5e':m<5?'#ffb020':'#6ee7a0'}
+
+  function paint(m,mode){
+    ctx.clearRect(0,0,W,H);
+    var tm=performance.now()/1000;
+    ctx.strokeStyle='rgba(255,255,255,.05)';ctx.lineWidth=1;
+    for(var i=1;i<6;i++){var y=H*i/6;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke()}
+    var off=(tm*30)%60;for(var x=-off;x<W;x+=60){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke()}
+    var c=mode==='crashed'?'#ff3344':mode==='cashed'?'#6ee7a0':color(m);
+    var tmax=Math.max(8,Math.log(Math.max(m,1.5))/RATE*1.2),mmax=Math.max(m*1.25,2),pad=24;
+    function X(t){return pad+t/tmax*(W-pad*2)} function Y(v){return H-pad-(v-1)/(mmax-1)*(H-pad*2)}
+    var tend=Math.log(Math.max(m,1.0001))/RATE,steps=90;
+    ctx.beginPath();for(var s=0;s<=steps;s++){var t=tend*s/steps,v=Math.exp(RATE*t);s?ctx.lineTo(X(t),Y(v)):ctx.moveTo(X(t),Y(v))}
+    var ex=X(tend),ey=Y(m);
+    ctx.save();ctx.shadowColor=c;ctx.shadowBlur=18;ctx.strokeStyle=c;ctx.lineWidth=4;ctx.lineJoin='round';ctx.stroke();ctx.restore();
+    ctx.lineTo(ex,H);ctx.lineTo(X(0),H);ctx.closePath();
+    var g=ctx.createLinearGradient(0,ey,0,H);g.addColorStop(0,c+'55');g.addColorStop(1,c+'00');ctx.fillStyle=g;ctx.fill();
+    if(mode==='running'||mode==='idle'){ctx.beginPath();ctx.arc(ex,ey,6,0,7);ctx.fillStyle='#fff';ctx.shadowColor=c;ctx.shadowBlur=16;ctx.fill();ctx.shadowBlur=0}
+    for(var p=particles.length-1;p>=0;p--){var q=particles[p];q.x+=q.vx;q.y+=q.vy;q.vy+=.12;q.l-=.02;
+      if(q.l<=0){particles.splice(p,1);continue}ctx.globalAlpha=q.l;ctx.fillStyle=q.c;ctx.fillRect(q.x,q.y,3,3)}ctx.globalAlpha=1;
+    if(mode==='crashed'||mode==='cashed')ctx.globalAlpha=1;
   }
-  function stop(){clearInterval(timer);cancelAnimationFrame(draw);}
-  function crashed(c){stop();ui(false);big.textContent='x'+Number(c).toFixed(2);big.style.color='#ff5566';
-    msg.textContent='O gráfico caiu em x'+Number(c).toFixed(2);paint(c,'#ff5566');refreshFree();}
-  function refreshFree(){location.hash='';setTimeout(function(){},0);}
-  function loop(){
-    var m=Math.exp(RATE*(performance.now()-t0)/1000);
-    big.textContent='x'+m.toFixed(2);big.style.color='#fff';paint(m);
-    if(running) draw=requestAnimationFrame(loop);
+  function burst(x,y,col,n){for(var i=0;i<n;i++){var a=Math.random()*6.283,sp=1+Math.random()*5;particles.push({x:x,y:y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-2,l:1,c:col})}}
+  function frame(){
+    if(state==='running'){lastM=Math.exp(RATE*(performance.now()-t0)/1000);
+      big.textContent=lastM.toFixed(2)+'x';big.style.color=color(lastM);
+      if(Math.floor(lastM*10)%5===0)beep(300+lastM*40,.05,.02)}
+    paint(lastM,state);
+    if(state==='running'||particles.length)raf=requestAnimationFrame(frame);else raf=null;
+  }
+  function kick(){if(!raf)raf=requestAnimationFrame(frame)}
+
+  function finishCrash(c,k){
+    state='crashed';ui(false);clearInterval(poll);lastM=c;
+    big.textContent=c.toFixed(2)+'x';big.style.color='#ff3344';
+    msg.textContent=stakeNow?'Caiu! Você perdeu '+stakeNow+' kcoin':'Caiu!';
+    stage.classList.remove('cz-shake');void stage.offsetWidth;stage.classList.add('cz-shake');
+    burst(W*.8,H*.3,'#ff3344',60);beep(110,.5,.1);if(k!=null)setBal(k);kick();loadFeed();
+  }
+  function finishCash(m,p,k){
+    state='cashed';ui(false);clearInterval(poll);lastM=m;
+    big.textContent=m.toFixed(2)+'x';big.style.color='#6ee7a0';msg.textContent='Você sacou +'+p+' kcoin 🎉';
+    burst(W*.7,H*.4,'#6ee7a0',70);beep(880,.2,.08);if(k!=null)setBal(k);kick();loadFeed();
+  }
+  function startPolling(){
+    clearInterval(poll);
+    poll=setInterval(function(){fetch('/casino/tick').then(function(x){return x.json()}).then(function(d){
+      if(d.status==='crashed'&&running)finishCrash(d.crash,d.kcoin);
+      else if(d.status==='cashed'&&running)finishCash(d.mult,d.payout,d.kcoin);
+      else if(d.status==='running')t0=performance.now()-d.elapsed*1000;
+    }).catch(function(){})},500);
   }
   function begin(free){
-    var stake=parseInt(document.getElementById('stake').value,10);
-    msg.textContent='';
-    post('/casino/start',{stake:stake,free:free}).then(function(r){
-      if(r.error){msg.textContent=r.error;return;}
-      t0=performance.now();ui(true);loop();
-      if(free){var f=document.getElementById('free-left');f.textContent=Math.max(0,parseInt(f.textContent,10)-1);}
-      else{var b=document.getElementById('bal');b.textContent=parseInt(b.textContent,10)-stake;}
-      timer=setInterval(function(){
-        fetch('/casino/tick').then(function(x){return x.json();}).then(function(d){
-          if(d.status==='crashed'){crashed(d.crash);}
-          else if(d.status==='running'){t0=performance.now()-d.elapsed*1000;}
-        });
-      },400);
-    });
+    var stake=parseInt($('stake').value,10),auto=parseFloat($('auto').value)||0;
+    if(!(stake>=MINB)){msg.textContent='Aposta mínima: '+MINB;return}
+    msg.textContent='';go.disabled=gofree.disabled=true;
+    post('/casino/start',{stake:stake,free:free,auto:auto}).then(function(r){
+      go.disabled=false;
+      if(r.error){msg.textContent=r.error;gofree.disabled=parseInt($('free-left').textContent,10)<=0;return}
+      stakeNow=free?0:stake;autoNow=auto;t0=performance.now();state='running';lastM=1;particles=[];
+      ui(true);setBal(r.kcoin);$('free-left').textContent=r.free_left;msg.textContent=free?'Rodada grátis':'Boa sorte!';
+      startPolling();kick();beep(520,.1);
+    }).catch(function(){go.disabled=false;msg.textContent='Falha de conexão'});
   }
-  go.onclick=function(){begin(false);};
-  gofree.onclick=function(){begin(true);};
+  go.onclick=function(){begin(false)};
+  gofree.onclick=function(){begin(true)};
   out.onclick=function(){
     out.disabled=true;
     post('/casino/cashout').then(function(r){
-      out.disabled=false;stop();ui(false);
-      if(r.status==='cashed'){big.textContent='x'+r.mult.toFixed(2);big.style.color='#6ee7a0';
-        msg.textContent='Você sacou '+r.payout+' kcoin!';setBal(r.kcoin);paint(r.mult,'#6ee7a0');}
-      else if(r.status==='crashed'){crashed(r.crash);}
-      else{msg.textContent=r.error||'';}
-    });
+      out.disabled=false;
+      if(r.status==='cashed')finishCash(r.mult,r.payout,r.kcoin);
+      else if(r.status==='crashed')finishCrash(r.crash,r.kcoin);
+      else msg.textContent=r.error||'';
+    }).catch(function(){out.disabled=false});
   };
-  paint(1);
+  document.querySelectorAll('[data-q]').forEach(function(b){b.onclick=function(){
+    var i=$('stake'),v=parseInt(i.value,10)||MINB,q=b.dataset.q;
+    v=q==='half'?Math.floor(v/2):q==='x2'?v*2:MAXS;i.value=Math.min(MAXS,Math.max(MINB,v))}});
+
+  var hist=$('hist');
+  function loadFeed(){fetch('/casino/feed').then(function(r){return r.json()}).then(function(d){
+    var f=$('feed');f.innerHTML='';
+    d.rounds.forEach(function(r){var div=document.createElement('div'),a=document.createElement('span'),b=document.createElement('span');
+      a.textContent='@'+r.u;b.textContent=r.s==='cashed'?'x'+r.m.toFixed(2)+' · +'+r.p:'caiu x'+r.c.toFixed(2);
+      b.style.color=r.s==='cashed'?'#6ee7a0':'#ff8a95';div.appendChild(a);div.appendChild(b);f.appendChild(div)});
+    if(!d.rounds.length)f.innerHTML='<div style="opacity:.5">Sem rodadas ainda.</div>';
+    hist.innerHTML='';d.rounds.slice(0,12).forEach(function(r){var i=document.createElement('i'),v=r.s==='cashed'?r.m:r.c;
+      i.textContent=v.toFixed(2)+'x';i.className=v>=2?'hi':'lo';hist.appendChild(i)});
+  }).catch(function(){})}
+
+  fit();paint(1,'idle');loadFeed();setInterval(loadFeed,8000);
+  // retoma rodada em andamento (recarregou a página)
+  fetch('/casino/tick').then(function(r){return r.json()}).then(function(d){
+    if(d.status==='running'){stakeNow=d.free?0:d.stake;t0=performance.now()-d.elapsed*1000;state='running';ui(true);msg.textContent='Rodada em andamento';startPolling();kick()}
+  });
 })();
 </script>
 {% endblock %}
