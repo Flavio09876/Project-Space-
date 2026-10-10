@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Molduras — K{% endblock %}
+{% block content %}
+<div class="page-container">
+  <div class="page-heading"><div><span class="eyebrow">PRÉVIA · ADMIN</span><h1>Molduras animadas</h1></div></div>
+  <p style="opacity:.7">Veja cada moldura no seu avatar e escolha a melhor animação.</p>
+  {% set photo = current_user.profile_photo %}
+  {% set src = (photo if photo.startswith('http') else url_for('avatar_file', filename=photo)) if photo else '' %}
+  <div style="display:grid;gap:14px">
+    {% for n, name, desc in frames %}
+    <section class="notifications-card" style="padding:18px;display:flex;align-items:center;gap:20px;flex-wrap:wrap">
+      <div class="k-frame k-frame--{{ n }}" style="--sz:110px;--fw:7px">
+        {% if src %}<img src="{{ src }}" alt="">{% else %}<span class="k-frame__ph">{{ current_user.name[0]|upper }}</span>{% endif %}
+      </div>
+      <div class="k-frame k-frame--{{ n }}" style="--sz:44px;--fw:3px">
+        {% if src %}<img src="{{ src }}" alt="">{% else %}<span class="k-frame__ph">{{ current_user.name[0]|upper }}</span>{% endif %}
+      </div>
+      <div style="flex:1;min-width:160px">
+        <div style="font-size:20px;font-weight:800">{{ n }} · {{ name }}</div>
+        <div style="opacity:.65">{{ desc }}</div>
+      </div>
+    </section>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
