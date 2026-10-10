@@ -64,6 +64,7 @@ DAILY = 20
 
 
 def migrate():
+    core.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS name_fx TEXT")
     core.execute(
         "CREATE UNIQUE INDEX IF NOT EXISTS wallet_task_once ON wallet_ledger (user_id, note) WHERE kind = 'task'"
     )
@@ -184,6 +185,46 @@ def buscar():
     return render_template("search.html", q=q, users=users, posts=posts, tags=trending())
 
 
+NAME_FX = [
+    ("fluxo", "Fluxo", "Degradê vermelho e dourado correndo"),
+    ("neon", "Neon", "Brilho vermelho pulsando"),
+    ("glitch", "Glitch", "Letras com ruído RGB"),
+    ("brasa", "Brasa", "Chama tremulando"),
+    ("ouro", "Ouro", "Reflexo dourado que passa"),
+    ("prisma", "Prisma", "Cores mudando suavemente"),
+]
+_fx_cache = {"t": 0, "v": {}}
+
+
+def fx_for(username):
+    """Classe CSS do nick animado de um usuário (cache de 60s, 1 consulta)."""
+    import time
+    if time.time() - _fx_cache["t"] > 60:
+        rows = core.query_all("SELECT username, name_fx FROM users WHERE name_fx IS NOT NULL")
+        _fx_cache["v"] = {r["username"]: r["name_fx"] for r in rows}
+        _fx_cache["t"] = time.time()
+    fx = _fx_cache["v"].get(username)
+    return f"nfx nfx-{fx}" if fx else ""
+
+
+@bp.route("/nicks", methods=["GET", "POST"])
+def nicks():
+    """Prévia/seleção de nicks animados — por enquanto só administradores."""
+    import extras
+    user = core.get_current_user()
+    if not user or not extras.is_admin(user):
+        from flask import abort
+        abort(404)
+    if request.method == "POST":
+        key = request.form.get("fx", "")
+        valid = {k for k, _, _ in NAME_FX}
+        core.execute("UPDATE users SET name_fx = %s WHERE id = %s", (key if key in valid else None, user["id"]))
+        _fx_cache["t"] = 0
+        flash("Nick atualizado.")
+        return redirect(url_for("content.nicks"))
+    return render_template("nicks.html", fx_list=NAME_FX, current=user.get("name_fx"))
+
+
 FRAMES = [
     (1, "Brasa", "Anel de fogo girando com brilho"),
     (2, "Neon", "Anel vermelho que pulsa"),
@@ -209,6 +250,7 @@ def install(app, namespace):
         setattr(core, name, namespace[name])
     app.register_blueprint(bp)
     app.add_template_filter(rich, "rich")
+    app.jinja_env.globals["fx_for"] = fx_for
 
     @app.context_processor
     def _trend_ctx():

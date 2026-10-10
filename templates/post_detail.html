@@ -45,7 +45,7 @@
                             </div>
                         </details>
                         <a class="k-comment__name" href="{{ url_for('profile', username=comment.username) }}">
-                            {{ comment.name }}{% if comment.verified %}<span class="k-verified">✓</span>{% endif %}{{ role_tag(comment.username) }}
+                            <span class="{{ fx_for(comment.username) }}">{{ comment.name }}</span>{% if comment.verified %}<span class="k-verified">✓</span>{% endif %}{{ role_tag(comment.username) }}
                         </a>
                         <span class="k-comment__meta">@{{ comment.username }} · {{ comment.created_at|pz_time('ago') }}{% if comment.edited_at %} · editado{% endif %}</span>
                     </div>

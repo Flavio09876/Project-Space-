@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Nicks animados — K{% endblock %}
+{% block content %}
+<div class="page-container">
+  <div class="page-heading"><div><span class="eyebrow">PRÉVIA · ADMIN</span><h1>Nicks animados</h1></div></div>
+  {% with m = get_flashed_messages() %}{% if m %}<p style="color:#ff8a95">{{ m[0] }}</p>{% endif %}{% endwith %}
+  <div style="display:grid;gap:12px">
+    {% for key, label, desc in fx_list %}
+    <form method="POST" class="notifications-card" style="padding:16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+      <div style="flex:1;min-width:180px">
+        <div class="nfx nfx-{{ key }}" style="font-size:26px;font-weight:900">{{ current_user.name }}</div>
+        <div style="opacity:.6;font-size:13px">{{ label }} · {{ desc }}</div>
+      </div>
+      <input type="hidden" name="fx" value="{{ key }}">
+      {% if current == key %}<span style="opacity:.7">em uso</span>{% else %}<button class="z-profile-button primary">Usar</button>{% endif %}
+    </form>
+    {% endfor %}
+    <form method="POST"><input type="hidden" name="fx" value=""><button class="z-profile-button secondary">Remover efeito</button></form>
+  </div>
+</div>
+{% endblock %}

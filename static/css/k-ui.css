@@ -865,3 +865,18 @@ html, body { overflow-x: hidden; }
 .k-rtag--admin { color: #fff; background: linear-gradient(145deg, #ff3444, #8f0a16); border-color: #ff8a95; box-shadow: 0 0 10px rgba(225,29,46,.5); }
 .k-rtag--mod { color: #ffd0d5; background: #1d0a0e; border-color: #7a1a24; }
 .z-profile-name-row { flex-wrap: wrap; }
+
+/* ---------- Nicks animados ---------- */
+.nfx { display: inline-block; max-width: 100%; }
+@keyframes nfx-flow { to { background-position: -200% 0; } }
+@keyframes nfx-neon { 0%,100% { text-shadow: 0 0 4px #ff2d40, 0 0 10px #ff2d40; } 50% { text-shadow: 0 0 8px #ff2d40, 0 0 24px #ff2d40, 0 0 38px #ff2d40; } }
+@keyframes nfx-glitch { 0%,88%,100% { text-shadow: 0 0 0 transparent; transform: none; } 90% { text-shadow: -2px 0 #ff2d40, 2px 0 #00e5ff; transform: translateX(1px); } 94% { text-shadow: 2px 0 #ff2d40, -2px 0 #00e5ff; transform: translateX(-1px); } 97% { text-shadow: -1px 1px #ff2d40, 1px -1px #00e5ff; } }
+@keyframes nfx-brasa { 0%,100% { text-shadow: 0 -2px 6px #ff5a1f, 0 -6px 14px #ff2d40; } 35% { text-shadow: 0 -3px 8px #ffb347, 0 -8px 18px #ff5a1f; } 70% { text-shadow: 0 -1px 5px #ff2d40, 0 -5px 12px #b3121f; } }
+@keyframes nfx-hue { to { filter: hue-rotate(360deg); } }
+.nfx-fluxo { background: linear-gradient(90deg, #ff2d40, #ffb347, #ff2d40) 0 0 / 200% 100%; -webkit-background-clip: text; background-clip: text; color: transparent !important; animation: nfx-flow 3s linear infinite; }
+.nfx-neon { color: #ffe1e4 !important; animation: nfx-neon 1.8s ease-in-out infinite; }
+.nfx-glitch { color: #fff !important; animation: nfx-glitch 2.6s steps(1) infinite; }
+.nfx-brasa { color: #ffd2a8 !important; animation: nfx-brasa 1.4s ease-in-out infinite; }
+.nfx-ouro { background: linear-gradient(110deg, #8a6a1f 30%, #fff1b8 45%, #ffd24d 50%, #fff1b8 55%, #8a6a1f 70%) 0 0 / 250% 100%; -webkit-background-clip: text; background-clip: text; color: transparent !important; animation: nfx-flow 3.2s linear infinite; }
+.nfx-prisma { background: linear-gradient(90deg, #ff4d5e, #ffb020, #6ee7a0, #4db8ff, #c084fc, #ff4d5e) 0 0 / 200% 100%; -webkit-background-clip: text; background-clip: text; color: transparent !important; animation: nfx-flow 4s linear infinite; }
+@media (prefers-reduced-motion: reduce) { .nfx { animation: none !important; } }
