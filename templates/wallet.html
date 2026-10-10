@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% from "_wallet_icons.html" import kcoin, crystal %}
+{% block title %}Carteira — K{% endblock %}
+{% block content %}
+<div class="page-container">
+  <div class="page-heading"><div><span class="eyebrow">CARTEIRA</span><h1>Seus saldos</h1></div></div>
+
+  {% with m = get_flashed_messages() %}{% if m %}<p style="color:#ff8a95">{{ m[0] }}</p>{% endif %}{% endwith %}
+
+  <section style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+    <div class="notifications-card" style="padding:18px;text-align:center">
+      <div style="font-size:30px">{{ kcoin(34) }}</div>
+      <div style="font-size:26px;font-weight:800">{{ '{:,}'.format(w.kcoin).replace(',', '.') }}</div>
+      <div style="opacity:.6">kcoin</div>
+    </div>
+    <div class="notifications-card" style="padding:18px;text-align:center">
+      <div style="font-size:30px">{{ crystal(34) }}</div>
+      <div style="font-size:26px;font-weight:800">{{ '{:,}'.format(w.crystals).replace(',', '.') }}</div>
+      <div style="opacity:.6">cristais</div>
+    </div>
+  </section>
+
+  <section class="notifications-card" style="padding:16px;margin-bottom:16px">
+    <strong>Trocar</strong> <span style="opacity:.6">— 1 {{ crystal(14) }} = {{ rate }} {{ kcoin(14) }}</span>
+    <form method="POST" style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+      <input type="number" name="qty" min="1" value="1" style="width:90px">
+      <button name="action" value="buy" class="z-profile-button primary">Comprar cristais</button>
+      <button name="action" value="sell" class="z-profile-button secondary">Vender cristais</button>
+    </form>
+  </section>
+
+  <section class="notifications-card">
+    <div style="padding:14px 16px;font-weight:700">Histórico</div>
+    {% for r in rows %}
+    <div class="notification-item" style="display:flex;justify-content:space-between;gap:10px">
+      <div><div>{{ labels.get(r.kind, r.kind) }}</div><time>{{ r.created_at|pz_time("ago") }}</time></div>
+      <div style="text-align:right">
+        {% if r.kcoin_delta %}<div style="color:{{ '#6ee7a0' if r.kcoin_delta > 0 else '#ff8a95' }}">{{ '%+d'|format(r.kcoin_delta) }} {{ kcoin(14) }}</div>{% endif %}
+        {% if r.crystal_delta %}<div style="color:{{ '#6ee7a0' if r.crystal_delta > 0 else '#ff8a95' }}">{{ '%+d'|format(r.crystal_delta) }} {{ crystal(14) }}</div>{% endif %}
+      </div>
+    </div>
+    {% else %}
+    <div class="empty-state"><p>Nenhuma movimentação ainda.</p></div>
+    {% endfor %}
+  </section>
+</div>
+{% endblock %}

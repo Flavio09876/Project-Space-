@@ -2869,6 +2869,9 @@ import extras
 
 extras.install(app, globals())
 extras.migrate()
+import wallet
+wallet.install(app, globals())
+wallet.migrate()
 
 
 # ============================================================

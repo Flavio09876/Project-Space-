@@ -89,6 +89,10 @@
                     Editar perfil
                 </a>
 
+                <a href="{{ url_for('wallet.carteira') }}">
+                    Carteira{% if wallet_me %} · {{ wallet_me.kcoin }} kcoin{% endif %}
+                </a>
+
                 <a href="{{ url_for('extras.settings') }}">
                     Configurações
                 </a>
