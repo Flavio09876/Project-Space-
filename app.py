@@ -21,6 +21,7 @@ from pathlib import Path
 from functools import wraps
 import os
 import threading
+import time
 import psycopg
 from psycopg.rows import dict_row
 import secrets
@@ -83,6 +84,7 @@ ALLOWED_IMAGES = {
 
 _pool = None
 _pool_lock = threading.Lock()
+_pool_off_until = [0.0]
 
 
 def _conninfo():
@@ -101,7 +103,7 @@ def _conninfo():
 
 def _connect():
     """Conexão avulsa (sem pool)."""
-    return psycopg.connect(_conninfo(), row_factory=dict_row)
+    return psycopg.connect(_conninfo(), row_factory=dict_row, connect_timeout=10, prepare_threshold=None)
 
 
 class _Lease:
@@ -112,7 +114,7 @@ class _Lease:
         self.pooled = False
 
     def __enter__(self):
-        pool = _get_pool()
+        pool = _get_pool() if (os.environ.get("DB_POOL") == "1" and time.time() > _pool_off_until[0]) else None
         if pool is not None:
             try:
                 self.conn = pool.getconn(timeout=float(os.environ.get("DB_POOL_WAIT", "6")))
@@ -120,6 +122,7 @@ class _Lease:
                 return self.conn
             except Exception:
                 self.conn = None
+                _pool_off_until[0] = time.time() + 300   # pool com problema: 5 min só com conexões avulsas
         self.conn = _connect()
         return self.conn
 
