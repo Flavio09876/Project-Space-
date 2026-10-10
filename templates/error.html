@@ -6,7 +6,11 @@
         <div class="k-empty__icon">!</div>
         <h2>{{ title }}</h2>
         <p>{{ message }}</p>
-        <a href="{{ url_for('home') if current_user else url_for('welcome') }}" class="k-btn k-btn--primary">Voltar ao início</a>
+        {% if ref %}<p class="k-muted">Código do erro: <strong>{{ ref }}</strong></p>{% endif %}
+        <div class="k-hero__cta">
+            {% if retry %}<button type="button" class="k-btn" onclick="location.reload()">Tentar novamente</button>{% endif %}
+            <a href="{{ url_for('home') if current_user else url_for('welcome') }}" class="k-btn k-btn--primary">Voltar ao início</a>
+        </div>
     </div>
 </div>
 {% endblock %}

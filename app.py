@@ -1129,7 +1129,6 @@ def home():
             user["id"],
             user["id"],
             user["id"],
-            user["id"],
         ),
     )
 

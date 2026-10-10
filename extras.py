@@ -590,6 +590,50 @@ def install(app, namespace):
     app.context_processor(_context)
     app.register_error_handler(403, _forbidden)
     app.register_error_handler(429, _forbidden)
+    app.register_error_handler(Exception, _unexpected_error)
+
+
+_FALLBACK_ERROR_PAGE = (
+    '<!doctype html><html lang="pt-BR"><meta charset="utf-8">'
+    '<meta name="viewport" content="width=device-width,initial-scale=1"><title>K — erro</title>'
+    '<body style="margin:0;min-height:100vh;display:grid;place-items:center;background:#050506;'
+    'color:#f5f5f6;font-family:system-ui,sans-serif;text-align:center;padding:24px">'
+    '<div><div style="width:64px;height:64px;margin:0 auto 18px;border-radius:18px;'
+    'background:linear-gradient(145deg,#ff2d40,#8f0a16);display:grid;place-items:center;'
+    'font-size:36px;font-weight:900">K</div><h1 style="font-size:22px;margin:0 0 8px">Algo deu errado</h1>'
+    '<p style="color:#8a8a93;margin:0 0 22px">Tente de novo em instantes. Código: {ref}</p>'
+    '<a href="/" style="background:#e11d2e;color:#fff;border-radius:999px;padding:12px 24px;'
+    'text-decoration:none;font-weight:700">Voltar ao início</a></div></body></html>'
+)
+
+
+def _unexpected_error(error):
+    """Qualquer erro inesperado vira uma tela amigável (e o erro real vai para o log)."""
+    from werkzeug.exceptions import HTTPException
+
+    if isinstance(error, HTTPException):
+        return error
+
+    ref = secrets.token_hex(3)
+    log.error("Erro interno [%s] em %s %s", ref, request.method, request.path, exc_info=error)
+
+    if request.path.startswith("/api/"):
+        return jsonify({
+            "ok": False,
+            "error": "Erro interno. Tente novamente. (código " + ref + ")",
+        }), 500
+
+    try:
+        return render_template(
+            "error.html",
+            title="Algo deu errado",
+            message="Tivemos um problema do nosso lado e já registramos o erro. Tente de novo em instantes.",
+            ref=ref,
+            retry=True,
+        ), 500
+    except Exception:
+        log.exception("Falha ao montar a tela de erro [%s]", ref)
+        return _FALLBACK_ERROR_PAGE.replace("{ref}", ref), 500
 
 
 def _forbidden(error):
