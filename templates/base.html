@@ -26,7 +26,7 @@
 
         <a href="{{ url_for('home') if current_user else url_for('welcome') }}"
            class="brand">
-            <span class="brand-mark">K</span>
+            <span class="brand-mark"><img src="{{ url_for('static', filename='icons/k.svg') }}" alt="K" style="width:100%;height:100%;display:block;border-radius:inherit"></span>
             <span class="brand-name">K</span>
         </a>
 
@@ -87,6 +87,10 @@
 
                 <a href="{{ url_for('edit_profile') }}">
                     Editar perfil
+                </a>
+
+                <a href="{{ url_for('casino.page') }}">
+                    Jogo do gráfico
                 </a>
 
                 <a href="{{ url_for('wallet.carteira') }}">

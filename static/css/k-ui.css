@@ -767,3 +767,9 @@ small.k-hint { margin: 0; font-size: 12.5px; }
     .k-menu__panel { min-width: 190px; }
     .k-auth__card { padding: 26px 20px; }
 }
+
+/* nome + selo alinhados na mesma linha */
+.k-post__name { display: flex !important; align-items: center; gap: 0; overflow: visible !important; min-width: 0; }
+.k-post__nametext { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.k-post__name .k-verified { vertical-align: middle !important; margin-left: 5px !important; }
+.brand-mark { overflow: hidden; background: none !important; }

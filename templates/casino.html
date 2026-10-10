@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% from "_wallet_icons.html" import kcoin %}
+{% block title %}Gráfico — K{% endblock %}
+{% block content %}
+<div class="page-container">
+  <div class="page-heading"><div><span class="eyebrow">JOGO</span><h1>Gráfico K</h1></div></div>
+
+  {% if not adult %}
+  <section class="notifications-card" style="padding:18px">
+    O jogo é apenas para maiores de 18 anos.
+  </section>
+  {% else %}
+  <section class="notifications-card" style="padding:14px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <span>Saldo: <strong id="bal">{{ w.kcoin }}</strong> {{ kcoin(16) }}</span>
+      <span style="opacity:.7">Grátis hoje: <strong id="free-left">{{ free_left }}</strong>/{{ cfg.free_total }}</span>
+    </div>
+    <canvas id="cv" width="640" height="300" style="width:100%;height:auto;background:#0b0b0e;border:1px solid #3a0d12;border-radius:14px"></canvas>
+    <div id="big" style="text-align:center;font-size:44px;font-weight:900;margin:8px 0">1.00x</div>
+    <div id="msg" style="text-align:center;min-height:22px;opacity:.85"></div>
+    <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+      <input id="stake" type="number" min="{{ cfg.min }}" max="{{ cfg.max }}" value="10" style="flex:1;min-width:90px">
+      <button id="go" class="z-profile-button primary">Apostar</button>
+      <button id="gofree" class="z-profile-button secondary" {% if free_left <= 0 %}disabled{% endif %}>Rodada grátis</button>
+      <button id="out" class="z-profile-button primary" style="display:none;flex:1">Sacar</button>
+    </div>
+    <p style="opacity:.55;font-size:13px;margin:10px 0 0">
+      Aposta de {{ cfg.min }} a {{ cfg.max }} kcoin (grátis: até {{ cfg.free_max }}). Saque antes de o gráfico cair.
+      Moeda virtual, sem valor em dinheiro.
+    </p>
+  </section>
+
+  <section class="notifications-card" style="margin-top:14px">
+    <div style="padding:14px 16px;font-weight:700">Últimas rodadas</div>
+    {% for r in rows %}
+    <div class="notification-item" style="display:flex;justify-content:space-between">
+      <span>{{ r.stake }} {{ kcoin(13) }}{% if r.free %} · grátis{% endif %}</span>
+      <span style="color:{{ '#6ee7a0' if r.status == 'cashed' else '#ff8a95' }}">
+        {% if r.status == 'cashed' %}x{{ '%.2f'|format(r.cashed_mult) }} → +{{ r.payout }}{% else %}caiu em x{{ '%.2f'|format(r.crash_point) }}{% endif %}
+      </span>
+    </div>
+    {% else %}<div class="empty-state"><p>Nenhuma rodada ainda.</p></div>{% endfor %}
+  </section>
+  {% endif %}
+</div>
+
+<script>
+(function(){
+  var go=document.getElementById('go'); if(!go) return;
+  var gofree=document.getElementById('gofree'), out=document.getElementById('out');
+  var big=document.getElementById('big'), msg=document.getElementById('msg');
+  var cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+  var RATE={{ cfg.rate }}, t0=0, timer=null, draw=null, running=false, pts=[];
+
+  function post(url,body){return fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body||{})}).then(function(r){return r.json();});}
+  function setBal(n){document.getElementById('bal').textContent=n;}
+  function ui(r){running=r;go.style.display=gofree.style.display=r?'none':'';out.style.display=r?'':'none';}
+  function paint(m,color){
+    var W=cv.width,H=cv.height;ctx.clearRect(0,0,W,H);
+    ctx.strokeStyle='#1d1d22';ctx.lineWidth=1;
+    for(var i=1;i<5;i++){ctx.beginPath();ctx.moveTo(0,H*i/5);ctx.lineTo(W,H*i/5);ctx.stroke();}
+    var tmax=Math.max(10,Math.log(Math.max(m,2))/RATE*1.15), mmax=Math.max(m*1.15,2);
+    ctx.strokeStyle=color||'#ff2d40';ctx.lineWidth=4;ctx.lineJoin='round';ctx.beginPath();
+    var steps=80;
+    for(var s=0;s<=steps;s++){var t=Math.log(m)/RATE*s/steps, v=Math.exp(RATE*t);
+      var x=t/tmax*W, y=H-(v-1)/(mmax-1)*(H-20)-10; s?ctx.lineTo(x,y):ctx.moveTo(x,y);}
+    ctx.stroke();
+  }
+  function stop(){clearInterval(timer);cancelAnimationFrame(draw);}
+  function crashed(c){stop();ui(false);big.textContent='x'+Number(c).toFixed(2);big.style.color='#ff5566';
+    msg.textContent='O gráfico caiu em x'+Number(c).toFixed(2);paint(c,'#ff5566');refreshFree();}
+  function refreshFree(){location.hash='';setTimeout(function(){},0);}
+  function loop(){
+    var m=Math.exp(RATE*(performance.now()-t0)/1000);
+    big.textContent='x'+m.toFixed(2);big.style.color='#fff';paint(m);
+    if(running) draw=requestAnimationFrame(loop);
+  }
+  function begin(free){
+    var stake=parseInt(document.getElementById('stake').value,10);
+    msg.textContent='';
+    post('/casino/start',{stake:stake,free:free}).then(function(r){
+      if(r.error){msg.textContent=r.error;return;}
+      t0=performance.now();ui(true);loop();
+      if(free){var f=document.getElementById('free-left');f.textContent=Math.max(0,parseInt(f.textContent,10)-1);}
+      else{var b=document.getElementById('bal');b.textContent=parseInt(b.textContent,10)-stake;}
+      timer=setInterval(function(){
+        fetch('/casino/tick').then(function(x){return x.json();}).then(function(d){
+          if(d.status==='crashed'){crashed(d.crash);}
+          else if(d.status==='running'){t0=performance.now()-d.elapsed*1000;}
+        });
+      },400);
+    });
+  }
+  go.onclick=function(){begin(false);};
+  gofree.onclick=function(){begin(true);};
+  out.onclick=function(){
+    out.disabled=true;
+    post('/casino/cashout').then(function(r){
+      out.disabled=false;stop();ui(false);
+      if(r.status==='cashed'){big.textContent='x'+r.mult.toFixed(2);big.style.color='#6ee7a0';
+        msg.textContent='Você sacou '+r.payout+' kcoin!';setBal(r.kcoin);paint(r.mult,'#6ee7a0');}
+      else if(r.status==='crashed'){crashed(r.crash);}
+      else{msg.textContent=r.error||'';}
+    });
+  };
+  paint(1);
+})();
+</script>
+{% endblock %}

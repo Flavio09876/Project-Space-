@@ -35,14 +35,20 @@ def migrate():
     if row and not core.query_one(
         "SELECT 1 FROM wallet_ledger WHERE user_id = %s AND kind = 'genesis'", (row["id"],)
     ):
-        ensure(row["id"])
+        ensure(row["id"], bonus=False)
         change(row["id"], "genesis", PLATFORM_START[0], PLATFORM_START[1], "Saldo inicial da plataforma")
 
 
-def ensure(user_id):
-    core.execute(
-        "INSERT INTO wallets (user_id) VALUES (%s) ON CONFLICT (user_id) DO NOTHING", (user_id,)
+WELCOME = (300, 1)   # kcoin, cristais — uma vez por conta (existente ou nova)
+
+
+def ensure(user_id, bonus=True):
+    created = core.execute(
+        "INSERT INTO wallets (user_id) VALUES (%s) ON CONFLICT (user_id) DO NOTHING RETURNING user_id",
+        (user_id,),
     )
+    if created and bonus:
+        change(user_id, "welcome", WELCOME[0], WELCOME[1], "Bônus de boas-vindas")
 
 
 def get_wallet(user_id):
@@ -50,28 +56,34 @@ def get_wallet(user_id):
     return core.query_one("SELECT kcoin, crystals FROM wallets WHERE user_id = %s", (user_id,))
 
 
+def apply(cur, user_id, kind, kcoin=0, crystals=0, note=None):
+    """Variação dentro de uma transação aberta. False se o saldo ficaria negativo."""
+    cur.execute("INSERT INTO wallets (user_id) VALUES (%s) ON CONFLICT (user_id) DO NOTHING", (user_id,))
+    cur.execute(
+        """UPDATE wallets SET kcoin = kcoin + %s, crystals = crystals + %s
+           WHERE user_id = %s AND kcoin + %s >= 0 AND crystals + %s >= 0
+           RETURNING user_id""",
+        (kcoin, crystals, user_id, kcoin, crystals),
+    )
+    if not cur.fetchone():
+        return False
+    cur.execute(
+        """INSERT INTO wallet_ledger (user_id, kind, kcoin_delta, crystal_delta, note)
+           VALUES (%s, %s, %s, %s, %s)""",
+        (user_id, kind, kcoin, crystals, note),
+    )
+    return True
+
+
 def change(user_id, kind, kcoin=0, crystals=0, note=None):
     """Aplica variação atômica. Retorna True, ou False se o saldo ficaria negativo."""
     with core.get_db() as db:
         with db.cursor() as cur:
-            cur.execute(
-                """UPDATE wallets SET kcoin = kcoin + %s, crystals = crystals + %s
-                   WHERE user_id = %s AND kcoin + %s >= 0 AND crystals + %s >= 0
-                   RETURNING user_id""",
-                (kcoin, crystals, user_id, kcoin, crystals),
-            )
-            if not cur.fetchone():
-                return False
-            cur.execute(
-                """INSERT INTO wallet_ledger (user_id, kind, kcoin_delta, crystal_delta, note)
-                   VALUES (%s, %s, %s, %s, %s)""",
-                (user_id, kind, kcoin, crystals, note),
-            )
-    return True
+            return apply(cur, user_id, kind, kcoin, crystals, note)
 
 
 KIND_LABEL = {
-    "genesis": "Saldo inicial", "convert_in": "Troca por cristais", "convert_out": "Troca por kcoin",
+    "genesis": "Saldo inicial", "welcome": "Bônus de boas-vindas", "bet_stake": "Aposta", "bet_free": "Rodada grátis", "convert_in": "Troca por cristais", "convert_out": "Troca por kcoin",
     "task": "Tarefa", "bet_win": "Ganho no jogo", "bet_loss": "Aposta perdida",
     "house": "Receita da plataforma", "mod": "Repasse moderação",
 }

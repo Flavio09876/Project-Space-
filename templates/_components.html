@@ -51,7 +51,7 @@
             {{ avatar(photo, name, 'md') }}
             <span class="k-post__who">
                 <span class="k-post__name">
-                    {{ name }}{% if verified %}<span class="k-verified" title="Conta verificada">✓</span>{% endif %}
+                    <span class="k-post__nametext">{{ name }}</span>{% if verified %}<span class="k-verified" title="Conta verificada">✓</span>{% endif %}
                 </span>
                 <span class="k-post__meta">@{{ username }}</span>
             </span>
