@@ -217,6 +217,7 @@ def criar():
         flash("Envie uma imagem (logo) válida para a empresa.")
         return redirect(url_for("market.lista"))
     now = _now()
+    platform = _uid(PLATFORM)
     with core.get_db() as db:
         with db.cursor() as cur:
             ok = wallet.apply(cur, user["id"], "founder", -FOUNDER_FEE, 0, f"abrir {name}") if pay != "crystal" \
@@ -224,7 +225,6 @@ def criar():
             if not ok:
                 flash("Saldo insuficiente.")
                 return redirect(url_for("market.lista"))
-            platform = _uid(PLATFORM)
             if platform and platform != user["id"]:
                 wallet.apply(cur, platform, "house", FOUNDER_FEE if pay != "crystal" else 0,
                              FOUNDER_CRYSTAL if pay == "crystal" else 0, f"taxa {name}")

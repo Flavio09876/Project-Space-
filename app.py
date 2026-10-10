@@ -104,26 +104,75 @@ def _connect():
     return psycopg.connect(_conninfo(), row_factory=dict_row)
 
 
-def get_db():
-    """Conexão do pool (reaproveitada entre requisições). `with get_db() as db:` devolve ao pool."""
+class _Lease:
+    """Pega conexão do pool; se o pool estiver travado, usa uma conexão avulsa (nunca fica 30s esperando)."""
+
+    def __init__(self):
+        self.conn = None
+        self.pooled = False
+
+    def __enter__(self):
+        pool = _get_pool()
+        if pool is not None:
+            try:
+                self.conn = pool.getconn(timeout=float(os.environ.get("DB_POOL_WAIT", "6")))
+                self.pooled = True
+                return self.conn
+            except Exception:
+                self.conn = None
+        self.conn = _connect()
+        return self.conn
+
+    def __exit__(self, exc_type, exc, tb):
+        conn = self.conn
+        try:
+            if exc_type is None:
+                conn.commit()
+            else:
+                conn.rollback()
+        except Exception:
+            pass
+        if self.pooled:
+            try:
+                _pool.putconn(conn)
+            except Exception:
+                pass
+        else:
+            try:
+                conn.close()
+            except Exception:
+                pass
+        return False
+
+
+def _get_pool():
     global _pool
     try:
         from psycopg_pool import ConnectionPool
     except ImportError:
-        return _connect()
+        return None
     if _pool is None:
         with _pool_lock:
             if _pool is None:
-                _pool = ConnectionPool(
-                    _conninfo(),
-                    min_size=1,
-                    max_size=int(os.environ.get("DB_POOL_MAX", "5")),
-                    kwargs={"row_factory": dict_row, "prepare_threshold": None},
-                    check=ConnectionPool.check_connection,
-                    max_idle=240,
-                    open=True,
-                )
-    return _pool.connection()
+                try:
+                    _pool = ConnectionPool(
+                        _conninfo(),
+                        min_size=1,
+                        max_size=int(os.environ.get("DB_POOL_MAX", "4")),
+                        kwargs={"row_factory": dict_row, "prepare_threshold": None, "connect_timeout": 8},
+                        check=ConnectionPool.check_connection,
+                        max_idle=120,
+                        max_lifetime=900,
+                        open=True,
+                    )
+                except Exception:
+                    return None
+    return _pool
+
+
+def get_db():
+    """`with get_db() as db:` — conexão reaproveitada, com saída de emergência."""
+    return _Lease()
 
 
 def query_one(sql, parameters=()):
