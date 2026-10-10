@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% from "_wallet_icons.html" import kcoin, crystal %}
+{% block title %}Bolsa K{% endblock %}
+{% block content %}
+<style>
+.bk-grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}
+.bk-card{display:flex;gap:12px;align-items:center;background:linear-gradient(180deg,#111116,#0a0a0d);border:1px solid #2a0c11;border-radius:18px;padding:14px;text-decoration:none;color:#fff;transition:.15s}
+.bk-card:hover{border-color:#e11d2e;transform:translateY(-2px)}
+.bk-logo{width:52px;height:52px;border-radius:14px;object-fit:cover;background:#1a1a20;flex:none}
+.bk-up{color:#6ee7a0}.bk-dn{color:#ff8a95}
+.bk-box{background:#0f0f13;border:1px solid #2a0c11;border-radius:18px;padding:16px;margin-bottom:16px}
+.bk-box input,.bk-box select{background:#0c0c10;border:1px solid #2a2a31;color:#fff;border-radius:12px;padding:11px;font-size:15px;width:100%;box-sizing:border-box}
+.bk-row{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-bottom:10px}
+</style>
+<div class="page-container">
+  <div class="page-heading"><div><span class="eyebrow">MERCADO VIRTUAL</span><h1>Bolsa K</h1></div>
+    <span class="cz-chip" style="display:inline-flex;gap:6px;align-items:center">{{ kcoin(16) }} {{ w.kcoin }} · {{ crystal(16) }} {{ w.crystals }}</span></div>
+
+  {% with m = get_flashed_messages() %}{% if m %}<p style="color:#ff8a95">{{ m[0] }}</p>{% endif %}{% endwith %}
+  {% if w.kcoin < 0 %}<p class="bk-box" style="color:#ff8a95">Você está com dívida de {{ -w.kcoin }} kcoin. Pague com missões e o presente diário.</p>{% endif %}
+
+  <h2 style="margin:6px 2px 10px">Empresas abertas</h2>
+  {% if open_m %}
+  <div class="bk-grid" style="margin-bottom:22px">
+    {% for m in open_m %}
+    <a class="bk-card" href="{{ url_for('market.detalhe', market_id=m.id) }}">
+      <img class="bk-logo" src="{{ m.logo_url }}" alt="" loading="lazy">
+      <div style="min-width:0;flex:1">
+        <div style="font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ m.name }}</div>
+        <div style="opacity:.6;font-size:13px">de @{{ m.username }} · {{ m.left }}</div>
+        <div class="{{ 'bk-up' if m.price >= 100 else 'bk-dn' }}" style="font-weight:800">{{ '%.2f'|format(m.price) }} <small>{{ '%+.1f'|format(m.price - 100) }}%</small></div>
+      </div>
+      <span style="font-size:12px;opacity:.7">{{ 'entradas abertas' if m.entries_open else 'só acompanhar' }}</span>
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}<div class="bk-box" style="opacity:.7">Nenhuma empresa aberta. Crie a primeira!</div>{% endif %}
+
+  <h2 style="margin:6px 2px 10px">Criar empresa</h2>
+  <form class="bk-box" method="POST" action="{{ url_for('market.criar') }}" enctype="multipart/form-data">
+    <div class="bk-row">
+      <input name="name" maxlength="30" placeholder="Nome da empresa" required>
+      <select name="duration">{% for label, s in durations %}<option value="{{ s }}" {{ 'selected' if s == 86400 }}>Prazo: {{ label }}</option>{% endfor %}</select>
+    </div>
+    <div class="bk-row">
+      <input type="file" name="logo" accept="image/*" required>
+      <select name="pay">
+        <option value="kcoin">Pagar {{ fee }} kcoin (você recebe 2% do volume investido)</option>
+        <option value="crystal">Pagar 1 cristal (você recebe 4% do volume)</option>
+      </select>
+    </div>
+    <button class="z-profile-button primary" style="width:100%">Abrir empresa</button>
+    <p style="opacity:.55;font-size:12px;margin:8px 0 0">O fundador não pode investir nem apostar na própria empresa. A logo precisa seguir as regras da plataforma.</p>
+  </form>
+
+  {% if mine %}
+  <h2 style="margin:6px 2px 10px">Minhas posições</h2>
+  <div class="bk-box">
+    {% for p in mine %}
+    <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #1a1a20">
+      <span>{{ p.name }} · {{ labels[p.kind] }} · {{ p.amount }}</span>
+      <span class="{{ 'bk-up' if p.result == 'win' else 'bk-dn' if p.result == 'lose' else '' }}">{% if p.result %}{{ '+' ~ p.payout if p.result == 'win' else 'perdeu' }}{% else %}em aberto{% endif %}</span>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if closed %}
+  <h2 style="margin:6px 2px 10px">Encerradas</h2>
+  <div class="bk-grid">
+    {% for m in closed %}
+    <a class="bk-card" href="{{ url_for('market.detalhe', market_id=m.id) }}" style="opacity:.8">
+      <img class="bk-logo" src="{{ m.logo_url }}" alt="" loading="lazy">
+      <div><div style="font-weight:800">{{ m.name }}</div>
+      <div class="{{ 'bk-up' if m.final_r and m.final_r > 1 else 'bk-dn' }}">{% if m.bankrupt %}FALIU{% else %}{{ '%+.1f'|format((m.final_r - 1) * 100) }}%{% endif %}</div></div>
+    </a>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

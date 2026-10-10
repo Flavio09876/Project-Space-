@@ -150,7 +150,8 @@ def start():
         return jsonify(error="Faça login."), 401
     if not _is_adult(user):
         return jsonify(error="O jogo é apenas para maiores de 18 anos."), 403
-    wallet.get_wallet(user["id"])
+    if wallet.get_wallet(user["id"])["kcoin"] < 0:
+        return jsonify(error="Você está com dívida. Pague com missões e presente diário."), 403
 
     open_round = _get_open(user["id"])
     if open_round:

@@ -2913,6 +2913,9 @@ try:
     import content
     content.install(app, globals())
     content.migrate()
+    import market
+    market.install(app, globals())
+    market.migrate()
 finally:
     _startup_lock.close()   # libera a trava
 

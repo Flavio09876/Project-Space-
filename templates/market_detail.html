@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% from "_wallet_icons.html" import kcoin, crystal %}
+{% block title %}{{ m.name }} — Bolsa K{% endblock %}
+{% block content %}
+<style>
+.bd{max-width:900px;margin:0 auto;display:grid;gap:16px}
+@media(min-width:900px){.bd{grid-template-columns:minmax(0,1.5fr) minmax(280px,1fr);align-items:start}}
+.bd-card{background:linear-gradient(180deg,#101014,#0a0a0d);border:1px solid #2a0c11;border-radius:20px;padding:16px}
+.bd-head{display:flex;gap:12px;align-items:center;margin-bottom:10px}
+.bd-head img{width:56px;height:56px;border-radius:15px;object-fit:cover}
+.bd-price{font-size:34px;font-weight:900;font-variant-numeric:tabular-nums}
+.bd svg{width:100%;height:240px;display:block;background:radial-gradient(120% 90% at 50% 100%,#2a0710,#0a0a0d 65%);border-radius:14px;border:1px solid #2a0c11}
+.bd input,.bd select{background:#0c0c10;border:1px solid #2a2a31;color:#fff;border-radius:12px;padding:11px;font-size:15px;width:100%;box-sizing:border-box;margin-bottom:8px}
+.bd label{font-size:12px;opacity:.6;text-transform:uppercase;letter-spacing:.08em}
+.bd-tabs{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+.bd-tabs button{flex:1;background:#15151a;border:1px solid #26262d;color:#fff;border-radius:10px;padding:9px;font-weight:700;cursor:pointer;min-width:70px}
+.bd-tabs button.on{border-color:#e11d2e;background:rgba(225,29,46,.18)}
+.bd-up{color:#6ee7a0}.bd-dn{color:#ff8a95}
+</style>
+<div class="page-container">
+  <div class="bd">
+    <section class="bd-card">
+      <div class="bd-head">
+        <img src="{{ m.logo_url }}" alt="">
+        <div style="flex:1;min-width:0"><h1 style="margin:0;font-size:22px">{{ m.name }}</h1>
+          <div style="opacity:.6;font-size:13px">fundada por <a href="{{ url_for('profile', username=m.username) }}">@{{ m.username }}</a> · {{ n_pos }} posições</div></div>
+        <div style="text-align:right"><div class="bd-price" id="price">—</div><div id="chg" style="font-weight:800"></div></div>
+      </div>
+      <svg id="chart" viewBox="0 0 600 240" preserveAspectRatio="none"></svg>
+      <div style="display:flex;justify-content:space-between;font-size:13px;opacity:.7;margin-top:8px">
+        <span>{% if m.status == 'open' %}Encerra em {{ left }}{% else %}Encerrada{% endif %}</span>
+        <span>{% if entries_open %}Entradas abertas{% elif m.status == 'open' %}Entradas encerradas{% endif %}</span>
+      </div>
+      {% if m.status == 'closed' %}
+      <p style="margin:12px 0 0;font-weight:800" class="{{ 'bd-dn' if m.bankrupt or m.final_r < 1 else 'bd-up' }}">
+        {% if m.bankrupt %}A empresa FALIU.{% else %}Fechou em {{ '%+.1f'|format((m.final_r - 1) * 100) }}%.{% endif %}
+        Pico na faixa {{ m.peak_slot + 1 }} de 6.</p>
+      {% endif %}
+    </section>
+
+    <aside class="bd-card">
+      <div style="font-size:14px;margin-bottom:10px">Saldo: {{ kcoin(15) }} <b>{{ w.kcoin }}</b> · {{ crystal(15) }} <b>{{ w.crystals }}</b></div>
+      {% if entries_open and not is_founder %}
+      <form method="POST" action="{{ url_for('market.entrar', market_id=m.id) }}">
+        <input type="hidden" name="kind" id="kind" value="invest">
+        <div class="bd-tabs" id="tabs">
+          <button type="button" data-k="invest" class="on">Investir</button>
+          <button type="button" data-k="up">Alta</button>
+          <button type="button" data-k="down">Queda</button>
+          <button type="button" data-k="bankrupt">Falência</button>
+          <button type="button" data-k="peak">Pico</button>
+        </div>
+        <div id="hint" style="font-size:13px;opacity:.7;margin-bottom:8px"></div>
+        <div id="slotbox" style="display:none"><label>Faixa do pico</label>
+          <select name="slot">{% for i in range(n_slots) %}<option value="{{ i }}">Faixa {{ i + 1 }} · paga x{{ peak_mult[i] }}</option>{% endfor %}</select></div>
+        <label>Valor (mín. {{ min_stake }} kcoin)</label>
+        <input type="number" name="amount" min="{{ min_stake }}" value="{{ min_stake }}" required>
+        <div id="crbox"><label>Cristais (opcional · só a partir de {{ crystal_min }} kcoin)</label>
+          <input type="number" name="crystals" min="0" max="{{ max_crystals }}" value="0"></div>
+        <button class="z-profile-button primary" style="width:100%">Confirmar</button>
+      </form>
+      {% elif is_founder %}<p style="opacity:.7">Você é o fundador: recebe parte do volume investido quando a empresa encerra.</p>
+      {% else %}<p style="opacity:.7">Esta empresa não aceita mais entradas.</p>{% endif %}
+
+      {% if mine %}<div style="margin-top:14px;font-weight:800">Suas posições</div>
+      {% for p in mine %}<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #1a1a20;font-size:14px">
+        <span>{{ labels[p.kind] }}{% if p.kind == 'peak' %} f{{ p.slot + 1 }}{% endif %} · {{ p.amount }}</span>
+        <span class="{{ 'bd-up' if p.result == 'win' else 'bd-dn' if p.result == 'lose' else '' }}">{% if p.result %}{{ '+' ~ p.payout if p.result == 'win' else 'perdeu' }}{% else %}aberta{% endif %}</span></div>{% endfor %}{% endif %}
+    </aside>
+  </div>
+</div>
+<script>
+(function(){
+  var svg=document.getElementById('chart'),NS='http://www.w3.org/2000/svg',total={{ 48 }},mid={{ m.id }};
+  var hints={invest:'Você lucra se a empresa fechar acima de 100. Falência = perda total e dívida de +50%.',
+    up:'Paga x{{ bet_mult.up }} se fechar em alta.',down:'Paga x{{ bet_mult.down }} se fechar em queda (ou falir).',
+    bankrupt:'Paga x{{ bet_mult.bankrupt }} se a empresa falir. Raro.',peak:'Escolha em que faixa do prazo o preço terá o PICO. Quanto mais difícil, mais paga.'};
+  function draw(pts,closed){
+    svg.innerHTML='';var W=600,H=240,pad=14,mn=Math.min.apply(null,pts.concat([100]))*.95,mx=Math.max.apply(null,pts.concat([100]))*1.05;
+    function X(i){return pad+i/total*(W-pad*2)} function Y(v){return H-pad-(v-mn)/(mx-mn||1)*(H-pad*2)}
+    function el(t,a){var e=document.createElementNS(NS,t);for(var k in a)e.setAttribute(k,a[k]);svg.appendChild(e);return e}
+    el('line',{x1:0,x2:W,y1:Y(100),y2:Y(100),stroke:'#ffffff22','stroke-dasharray':'4 4'});
+    var last=pts[pts.length-1],c=last>=100?'#6ee7a0':'#ff4d5e';
+    var d=pts.map(function(v,i){return(i?'L':'M')+X(i)+' '+Y(v)}).join(' ');
+    var g=el('defs',{});g.innerHTML='<linearGradient id="gf" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="'+c+'" stop-opacity=".35"/><stop offset="1" stop-color="'+c+'" stop-opacity="0"/></linearGradient>';
+    el('path',{d:d+' L'+X(pts.length-1)+' '+H+' L'+X(0)+' '+H+' Z',fill:'url(#gf)'});
+    el('path',{d:d,fill:'none',stroke:c,'stroke-width':3,'stroke-linejoin':'round','vector-effect':'non-scaling-stroke'});
+    el('circle',{cx:X(pts.length-1),cy:Y(last),r:5,fill:'#fff'});
+    document.getElementById('price').textContent=last.toFixed(2);document.getElementById('price').style.color=c;
+    var ch=document.getElementById('chg');ch.textContent=(last>=100?'+':'')+(last-100).toFixed(1)+'%';ch.style.color=c;
+  }
+  function load(){fetch('/bolsa/'+mid+'/serie').then(function(r){return r.json()}).then(function(d){draw(d.points,d.closed)}).catch(function(){})}
+  load();{% if m.status == 'open' %}setInterval(load,20000);{% endif %}
+  var tabs=document.getElementById('tabs');if(tabs){
+    function sel(k){document.getElementById('kind').value=k;document.getElementById('hint').textContent=hints[k];
+      document.getElementById('slotbox').style.display=k==='peak'?'':'none';document.getElementById('crbox').style.display=k==='invest'?'':'none';
+      tabs.querySelectorAll('button').forEach(function(b){b.classList.toggle('on',b.dataset.k===k)})}
+    tabs.onclick=function(e){if(e.target.dataset.k)sel(e.target.dataset.k)};sel('invest');}
+})();
+</script>
+{% endblock %}

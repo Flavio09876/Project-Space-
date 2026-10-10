@@ -15,7 +15,7 @@ def migrate():
     for sql in (
         """CREATE TABLE IF NOT EXISTS wallets (
             user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
-            kcoin BIGINT NOT NULL DEFAULT 0 CHECK (kcoin >= 0),
+            kcoin BIGINT NOT NULL DEFAULT 0,
             crystals BIGINT NOT NULL DEFAULT 0 CHECK (crystals >= 0)
         )""",
         """CREATE TABLE IF NOT EXISTS wallet_ledger (
@@ -27,6 +27,7 @@ def migrate():
             note TEXT,
             created_at TIMESTAMP NOT NULL DEFAULT (NOW() AT TIME ZONE 'utc')
         )""",
+        "ALTER TABLE wallets DROP CONSTRAINT IF EXISTS wallets_kcoin_check",
         "CREATE INDEX IF NOT EXISTS wallet_ledger_user_idx ON wallet_ledger (user_id, id DESC)",
     ):
         core.execute(sql)
@@ -59,14 +60,14 @@ def get_wallet(user_id):
     return core.query_one("SELECT kcoin, crystals FROM wallets WHERE user_id = %s", (user_id,))
 
 
-def apply(cur, user_id, kind, kcoin=0, crystals=0, note=None):
+def apply(cur, user_id, kind, kcoin=0, crystals=0, note=None, allow_negative=False):
     """Variação dentro de uma transação aberta. False se o saldo ficaria negativo."""
     cur.execute("INSERT INTO wallets (user_id) VALUES (%s) ON CONFLICT (user_id) DO NOTHING", (user_id,))
     cur.execute(
         """UPDATE wallets SET kcoin = kcoin + %s, crystals = crystals + %s
-           WHERE user_id = %s AND kcoin + %s >= 0 AND crystals + %s >= 0
+           WHERE user_id = %s AND (%s OR kcoin + %s >= 0) AND crystals + %s >= 0
            RETURNING user_id""",
-        (kcoin, crystals, user_id, kcoin, crystals),
+        (kcoin, crystals, user_id, allow_negative, kcoin, crystals),
     )
     if not cur.fetchone():
         return False
@@ -86,7 +87,7 @@ def change(user_id, kind, kcoin=0, crystals=0, note=None):
 
 
 KIND_LABEL = {
-    "genesis": "Saldo inicial", "welcome": "Bônus de boas-vindas", "bet_stake": "Aposta", "bet_free": "Rodada grátis", "convert_in": "Troca por cristais", "convert_out": "Troca por kcoin",
+    "genesis": "Saldo inicial", "welcome": "Bônus de boas-vindas", "bet_stake": "Aposta", "market": "Bolsa", "market_win": "Bolsa: ganho", "market_loss": "Bolsa: perda", "founder": "Empresa criada", "bet_free": "Rodada grátis", "convert_in": "Troca por cristais", "convert_out": "Troca por kcoin",
     "task": "Tarefa", "bet_win": "Ganho no jogo", "bet_loss": "Aposta perdida",
     "house": "Receita da plataforma", "mod": "Repasse moderação",
 }
