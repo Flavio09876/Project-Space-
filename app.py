@@ -277,10 +277,8 @@ def init_database():
             # Garante que o único selo permitido continue sendo eozffprivacy.
             cursor.execute("""
                 UPDATE users
-                SET verified = CASE
-                    WHEN username = 'eozffprivacy' THEN 1
-                    ELSE 0
-                END
+                SET verified = 1
+                WHERE username = 'eozffprivacy'
             """)
 
             cursor.execute("""
@@ -1019,24 +1017,6 @@ def login():
             return render_template(
                 "login.html"
             )
-
-
-        execute(
-            """
-            UPDATE users
-
-            SET verified =
-                CASE
-                    WHEN username =
-                        'eozffprivacy'
-                    THEN 1
-                    ELSE 0
-                END
-
-            WHERE id = %s
-            """,
-            (user["id"],),
-        )
 
 
         if user.get("banned_at"):

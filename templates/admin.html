@@ -118,6 +118,9 @@
                 <input type="hidden" name="reason"><input type="hidden" name="next" value="{{ here }}">
                 <button class="k-btn k-btn--small">Banir</button></form>
             {% endif %}
+            <form method="POST" action="{{ url_for('extras.admin_verify', user_id=person.id) }}">
+                <input type="hidden" name="next" value="{{ here }}">
+                <button class="k-btn k-btn--small">{{ 'Tirar selo' if person.verified else 'Dar selo' }}</button></form>
             <form method="POST" action="{{ url_for('extras.admin_delete_user', user_id=person.id) }}"
                   onsubmit="return confirm('Excluir @{{ person.username }} e TODO o conteúdo dessa conta?')">
                 <input type="hidden" name="next" value="{{ here }}">

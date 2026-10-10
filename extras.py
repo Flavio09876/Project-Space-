@@ -28,6 +28,7 @@ from urllib.parse import urlparse
 
 from flask import (
     Blueprint,
+    current_app,
     abort,
     flash,
     g,
@@ -102,6 +103,8 @@ def migrate():
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS pending_email TEXT",
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS banned_at TIMESTAMP",
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS ban_reason TEXT",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS signup_ip_hash TEXT",
+        "CREATE INDEX IF NOT EXISTS users_signup_ip_idx ON users (signup_ip_hash, created_at)",
         "ALTER TABLE posts ADD COLUMN IF NOT EXISTS edited_at TIMESTAMP",
         "ALTER TABLE comments ADD COLUMN IF NOT EXISTS edited_at TIMESTAMP",
         "ALTER TABLE messages ADD COLUMN IF NOT EXISTS edited_at TIMESTAMP",
@@ -172,8 +175,10 @@ def is_admin(user):
 
 
 def mail_enabled():
+    """Confirmação de e-mail está desligada. Para religar: EMAIL_VERIFICATION=1 + serviço de e-mail."""
     return bool(
-        os.environ.get("MAIL_FROM")
+        os.environ.get("EMAIL_VERIFICATION") == "1"
+        and os.environ.get("MAIL_FROM")
         and (os.environ.get("BREVO_API_KEY") or os.environ.get("RESEND_API_KEY"))
     )
 
@@ -349,8 +354,36 @@ def issue_verification(user_id, target_email, changing=False):
 # CADASTRO (chamado pelo register() do app.py)
 # ============================================================
 
+def ip_hash():
+    """IP do visitante, guardado só como hash (não dá para recuperar o IP original)."""
+    ip = _client_ip()
+    return hashlib.sha256((current_app.config["SECRET_KEY"] + "|" + ip).encode("utf-8")).hexdigest()
+
+
+def signup_limit_reached():
+    try:
+        limit = int(os.environ.get("MAX_ACCOUNTS_PER_IP", "3"))
+        hours = int(os.environ.get("SIGNUP_WINDOW_HOURS", "24"))
+    except ValueError:
+        limit, hours = 3, 24
+    if limit <= 0:
+        return False
+    row = core.query_one(
+        """
+        SELECT COUNT(*) AS n FROM users
+        WHERE signup_ip_hash = %s
+          AND created_at > CURRENT_TIMESTAMP - make_interval(hours => %s)
+        """,
+        (ip_hash(), hours),
+    )
+    return bool(row) and row["n"] >= limit
+
+
 def validate_registration(username, email, birth_date):
     """Retorna uma mensagem de erro ou None."""
+    if signup_limit_reached():
+        return "Já foram criadas contas demais a partir da sua rede. Tente novamente mais tarde."
+
     if username in RESERVED_USERNAMES:
         return "Esse nome de usuário é reservado. Escolha outro."
 
@@ -359,10 +392,6 @@ def validate_registration(username, email, birth_date):
 
     if len(email) > 254 or not EMAIL_RE.match(email):
         return "Digite um e-mail válido."
-
-    domain = email.rsplit("@", 1)[-1]
-    if domain in DISPOSABLE_DOMAINS:
-        return "E-mails temporários não são aceitos. Use um e-mail que você acessa."
 
     try:
         born = date.fromisoformat(birth_date)
@@ -382,10 +411,10 @@ def validate_registration(username, email, birth_date):
 
 
 def after_register(user_id, email):
-    """Marca a conta nova como não confirmada e envia o e-mail, se houver serviço."""
+    """Guarda o hash do IP do cadastro e, se a confirmação estiver ligada, envia o e-mail."""
     core.execute(
-        "UPDATE users SET email_verified = FALSE WHERE id = %s",
-        (user_id,),
+        "UPDATE users SET signup_ip_hash = %s, email_verified = %s WHERE id = %s",
+        (ip_hash(), not mail_enabled(), user_id),
     )
 
     if mail_enabled():
@@ -405,6 +434,10 @@ _FAIL_WINDOW = 600
 
 
 def _client_ip():
+    for header in ("CF-Connecting-IP", "True-Client-IP"):
+        value = request.headers.get(header, "").strip()
+        if value:
+            return value
     forwarded = request.headers.get("X-Forwarded-For", "")
     return (forwarded.split(",")[0].strip() or request.remote_addr or "?")
 
@@ -701,8 +734,6 @@ def change_email():
         flash("Senha incorreta.", "error")
     elif len(email) > 254 or not EMAIL_RE.match(email):
         flash("Digite um e-mail válido.", "error")
-    elif email.rsplit("@", 1)[-1] in DISPOSABLE_DOMAINS:
-        flash("E-mails temporários não são aceitos.", "error")
     elif email == user["email"]:
         flash("Esse já é o seu e-mail atual.", "error")
     elif core.query_one("SELECT 1 FROM users WHERE email = %s", (email,)):
@@ -1204,6 +1235,20 @@ def admin_unban(user_id):
     core.execute("UPDATE users SET banned_at = NULL, ban_reason = NULL WHERE id = %s", (user_id,))
     log_admin(admin_user["id"], "desbaniu conta", "user", user_id, "@" + target["username"])
     flash("@" + target["username"] + " foi desbanido.", "success")
+    return redirect(safe_next("extras.admin", tab="users"))
+
+
+@bp.post("/admin/user/<int:user_id>/verify")
+@admin_required
+def admin_verify(user_id):
+    admin_user = core.get_current_user()
+    target = core.query_one("SELECT id, username, verified FROM users WHERE id = %s", (user_id,))
+    if not target:
+        abort(404)
+    new_value = 0 if target["verified"] else 1
+    core.execute("UPDATE users SET verified = %s WHERE id = %s", (new_value, user_id))
+    log_admin(admin_user["id"], "deu selo" if new_value else "tirou selo", "user", user_id, "@" + target["username"])
+    flash(("Selo concedido a @" if new_value else "Selo removido de @") + target["username"] + ".", "success")
     return redirect(safe_next("extras.admin", tab="users"))
 
 
